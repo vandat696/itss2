@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S01 プロフィール・スキル</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header data-screen="S01"></header>
+
+<main>
+  <h1 class="page-title"><span class="code">S01</span>プロフィール・スキル</h1>
+  <p class="page-sub">Hồ sơ năng lực — CVをアップロードするか、手入力でプロフィールを作成します。</p>
+
+  <!-- Flow: CV lỗi → tải lại hoặc nhập tay (self-loop) -->
+  <div class="alert alert-error" id="cvError">
+    <strong>CVを読み込めませんでした。</strong>
+    <span class="alert-msg">ファイル形式（PDF / DOCX）とサイズ（5MB以下）を確認してください。</span>
+    <div class="alert-actions">
+      <button class="btn btn-sm" id="btnRetryUpload" type="button">再アップロード</button>
+      <button class="btn btn-sm" id="btnManual" type="button">手入力する</button>
+    </div>
+  </div>
+  <div class="alert alert-success" id="saved"><span class="alert-msg">保存しました。</span></div>
+
+  <form id="profileForm" novalidate>
+    <section class="card">
+      <h2>CVアップロード <span class="muted">Tải CV</span></h2>
+      <label class="dropzone" id="dropzone" for="cvFile">
+        <span class="dz-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        </span>
+        <span class="dz-title">CVファイルをドラッグ＆ドロップ</span>
+        <span>または <u>クリックして選択</u> ・ PDF / DOCX（5MBまで）</span>
+        <span class="dz-file" id="dzFile"></span>
+        <input type="file" id="cvFile" accept=".pdf,.docx">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>基本情報 <span class="muted">Thông tin cơ bản</span></h2>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="req" for="name">氏名</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="field">
+          <label class="req" for="major">専攻</label>
+          <input type="text" id="major" name="major" required>
+        </div>
+        <div class="field">
+          <label for="school">大学</label>
+          <input type="text" id="school" name="school">
+        </div>
+        <div class="field">
+          <label for="gradYear">卒業予定年</label>
+          <input type="number" id="gradYear" name="gradYear" min="2020" max="2035">
+        </div>
+        <div class="field">
+          <label for="jlpt">日本語能力</label>
+          <select id="jlpt" name="jlpt">
+            <option value="">選択してください</option>
+            <option>N1</option><option>N2</option><option>N3</option>
+            <option>N4</option><option>N5</option><option>なし</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="english">英語（TOEIC等）</label>
+          <input type="text" id="english" name="english" placeholder="例: TOEIC 750">
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>スキル <span class="muted">Kỹ năng</span></h2>
+      <div class="field">
+        <label for="skillInput">スキルを入力して Enter</label>
+        <input type="text" id="skillInput" placeholder="例: Java, SQL, React">
+        <div id="skillTags"></div>
+      </div>
+      <div class="field">
+        <label for="experience">経験・プロジェクト</label>
+        <textarea id="experience" name="experience" placeholder="インターン、課題、個人開発など"></textarea>
+      </div>
+      <div class="field">
+        <label for="desired">希望職種</label>
+        <input type="text" id="desired" name="desired" placeholder="例: バックエンドエンジニア">
+      </div>
+    </section>
+
+    <div class="actions">
+      <!-- Flow: Hủy chỉnh sửa → S04 -->
+      <button class="btn btn-ghost" type="button" id="btnCancel">キャンセル</button>
+      <!-- Flow: Lưu hồ sơ / Lưu thay đổi → S04 -->
+      <button class="btn btn-primary" type="submit">保存する</button>
+    </div>
+  </form>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+  const form = $("#profileForm");
+  const profile = Store.get("profile", {});
+  ["name", "major", "school", "gradYear", "jlpt", "english", "experience", "desired"]
+    .forEach((k) => { if (profile[k] != null) form.elements[k].value = profile[k]; });
+  const skills = setupTagInput($("#skillInput"), $("#skillTags"), profile.skills);
+
+  // CV upload: template only validates type/size; parsing goes here.
+  function handleFile(f) {
+    if (!f) return;
+    const okType = /\.(pdf|docx)$/i.test(f.name);
+    const okSize = f.size <= 5 * 1024 * 1024;
+    if (!okType || !okSize) {
+      showAlert("cvError");
+      $("#cvFile").value = "";
+      $("#dzFile").textContent = "";
+    } else {
+      hideAlert("cvError");
+      $("#dzFile").textContent = "📄 " + f.name;
+      // TODO: call CV parsing API and fill the form fields.
+    }
+  }
+  $("#cvFile").addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+  const dz = $("#dropzone");
+  ["dragenter", "dragover"].forEach((t) => dz.addEventListener(t, (e) => {
+    e.preventDefault();
+    dz.classList.add("dragover");
+  }));
+  ["dragleave", "drop"].forEach((t) => dz.addEventListener(t, () => dz.classList.remove("dragover")));
+  dz.addEventListener("drop", (e) => {
+    e.preventDefault();
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  $("#btnRetryUpload").addEventListener("click", () => $("#cvFile").click());
+  $("#btnManual").addEventListener("click", () => {
+    hideAlert("cvError");
+    $("#name").focus();
+  });
+
+  $("#btnCancel").addEventListener("click", () => go("S04"));
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!validateRequired(form)) return;
+    const data = Object.fromEntries(new FormData(form).entries());
+    data.skills = skills.get();
+    Store.set("profile", data);
+    go("S04", { msg: "profile_saved" });
+  });
+</script>
+</body>
+</html>

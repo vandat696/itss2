@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S02 求人情報・応募条件</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header data-screen="S02"></header>
+
+<main>
+  <h1 class="page-title"><span class="code">S02</span>求人情報・応募条件</h1>
+  <p class="page-sub">Tin tuyển dụng và yêu cầu — 求人を入力し、応募条件を確認してください。</p>
+
+  <!-- Flow: Dữ liệu lỗi → sửa hoặc thử lại (self-loop) -->
+  <div class="alert alert-error" id="dataError">
+    <strong>求人データにエラーがあります。</strong>
+    <span class="alert-msg">必須項目を入力するか、もう一度取得してください。</span>
+    <div class="alert-actions">
+      <button class="btn btn-sm" id="btnRetry" type="button">再取得</button>
+    </div>
+  </div>
+
+  <form id="jobForm" novalidate>
+    <section class="card">
+      <h2>求人の取り込み <span class="muted">Nhập tin tuyển dụng</span></h2>
+      <div class="field">
+        <label for="jobUrl">求人URL</label>
+        <div class="input-row">
+          <input type="url" id="jobUrl" name="jobUrl" placeholder="https://...">
+          <button class="btn" type="button" id="btnFetch">取得</button>
+        </div>
+        <span class="hint">URLから取得できない場合は下に手入力してください。</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>求人情報 <span class="muted">Thông tin tuyển dụng</span></h2>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="req" for="company">企業名</label>
+          <input type="text" id="company" name="company" required>
+        </div>
+        <div class="field">
+          <label class="req" for="position">職種</label>
+          <input type="text" id="position" name="position" required>
+        </div>
+        <div class="field">
+          <label for="location">勤務地</label>
+          <input type="text" id="location" name="location">
+        </div>
+        <div class="field">
+          <label for="deadline">応募締切</label>
+          <input type="date" id="deadline" name="deadline">
+        </div>
+      </div>
+      <div class="field">
+        <label for="description">仕事内容</label>
+        <textarea id="description" name="description"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>応募条件 <span class="muted">Yêu cầu tuyển dụng</span></h2>
+      <div class="field">
+        <label class="req" for="reqSkillInput">必須スキル（Enterで追加）</label>
+        <input type="text" id="reqSkillInput" placeholder="例: Java">
+        <div id="reqSkillTags"></div>
+      </div>
+      <div class="field">
+        <label for="prefSkillInput">歓迎スキル（Enterで追加）</label>
+        <input type="text" id="prefSkillInput" placeholder="例: AWS">
+        <div id="prefSkillTags"></div>
+      </div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="reqJlpt">日本語能力</label>
+          <select id="reqJlpt" name="reqJlpt">
+            <option value="">不問</option>
+            <option>N1</option><option>N2</option><option>N3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="reqOther">その他条件</label>
+          <input type="text" id="reqOther" name="reqOther" placeholder="例: 2026年卒">
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <!-- Flow: Quay lại hành trình → S04 -->
+      <button class="btn btn-ghost" type="button" id="btnBack">歩みに戻る</button>
+      <!-- Flow: Xác nhận yêu cầu → Xem mức độ phù hợp → S03 -->
+      <button class="btn btn-primary" type="submit">条件を確認して適合度を見る</button>
+    </div>
+  </form>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+  const form = $("#jobForm");
+  const job = Store.get("job", {});
+  ["jobUrl", "company", "position", "location", "deadline", "description", "reqJlpt", "reqOther"]
+    .forEach((k) => { if (job[k] != null) form.elements[k].value = job[k]; });
+  const reqSkills = setupTagInput($("#reqSkillInput"), $("#reqSkillTags"), job.reqSkills);
+  const prefSkills = setupTagInput($("#prefSkillInput"), $("#prefSkillTags"), job.prefSkills);
+
+  function fetchJob() {
+    // TODO: call job-scraping API. On failure, show the data error.
+    if (!$("#jobUrl").value.trim()) {
+      showAlert("dataError", "求人URLを入力してください。");
+      return;
+    }
+    hideAlert("dataError");
+  }
+  $("#btnFetch").addEventListener("click", fetchJob);
+  $("#btnRetry").addEventListener("click", fetchJob);
+
+  $("#btnBack").addEventListener("click", () => go("S04"));
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const okFields = validateRequired(form);
+    const okSkills = reqSkills.get().length > 0;
+    $("#reqSkillInput").classList.toggle("invalid", !okSkills);
+    if (!okFields || !okSkills) {
+      showAlert("dataError", "必須項目（企業名・職種・必須スキル）を入力してください。");
+      return;
+    }
+    hideAlert("dataError");
+    const data = Object.fromEntries(new FormData(form).entries());
+    data.reqSkills = reqSkills.get();
+    data.prefSkills = prefSkills.get();
+    Store.set("job", data);
+    go("S03");
+  });
+</script>
+</body>
+</html>

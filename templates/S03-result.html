@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S03 適合度の評価結果</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header data-screen="S03"></header>
+
+<main>
+  <h1 class="page-title"><span class="code">S03</span>適合度の評価結果</h1>
+  <p class="page-sub">Kết quả độ phù hợp — <span id="jobTitle">-</span></p>
+
+  <div class="grid grid-3">
+    <section class="card score-card">
+      <h2>総合適合度</h2>
+      <div class="score-ring" id="scoreRing">
+        <div class="inner"><div class="num"><span id="score">0</span><small>%</small></div></div>
+      </div>
+      <p class="score-label" id="scoreLabel"></p>
+      <p class="muted" id="scoreDetail"></p>
+    </section>
+    <section class="card span-2">
+      <h2>スキル比較 <span class="muted">So sánh kỹ năng</span></h2>
+      <p class="sub-label">✓ 一致しているスキル</p>
+      <div class="tags" id="matched"></div>
+      <p class="sub-label">✕ 不足しているスキル</p>
+      <div class="tags" id="missing"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>条件別の評価 <span class="muted">Đánh giá theo tiêu chí</span></h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>項目</th><th>求人の条件</th><th>あなた</th><th>判定</th></tr></thead>
+        <tbody id="criteria"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>改善提案 <span class="muted">Gợi ý cải thiện</span></h2>
+    <ul class="list" id="suggestions"></ul>
+  </section>
+
+  <div class="actions">
+    <!-- Flow: Sửa yêu cầu tuyển dụng → S02 -->
+    <button class="btn" type="button" id="btnEditJob">求人条件を修正</button>
+    <!-- Flow: Xem hành trình → S04 -->
+    <button class="btn" type="button" id="btnJourney">歩みを見る</button>
+  </div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+  const profile = Store.get("profile", {});
+  const job = Store.get("job", {});
+  const norm = (s) => s.toLowerCase().trim();
+
+  $("#jobTitle").textContent = job.company ? `${job.company} / ${job.position}` : "求人未登録";
+
+  // Placeholder scoring: share of required skills the profile has.
+  // Replace with the real evaluation API.
+  const mySkills = (profile.skills || []).map(norm);
+  const req = job.reqSkills || [];
+  const matched = req.filter((s) => mySkills.includes(norm(s)));
+  const missing = req.filter((s) => !mySkills.includes(norm(s)));
+  const score = req.length ? Math.round((matched.length / req.length) * 100) : 0;
+
+  const ring = $("#scoreRing");
+  ring.classList.add(score >= 80 ? "high" : score >= 50 ? "mid" : "low");
+  // Count up the number and fill the ring.
+  let shown = 0;
+  const tick = () => {
+    shown = Math.min(score, shown + Math.max(1, Math.ceil(score / 30)));
+    $("#score").textContent = shown;
+    ring.style.setProperty("--p", shown);
+    if (shown < score) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  $("#scoreLabel").textContent =
+    score >= 80 ? "応募に十分な適合度です" : score >= 50 ? "あと少しで条件を満たせます" : "改善の余地があります";
+  $("#scoreDetail").textContent = `必須スキル ${matched.length} / ${req.length} 件一致`;
+  $("#matched").innerHTML = matched.map((s) => `<span class="tag tag-ok">${escapeHtml(s)}</span>`).join("") || '<span class="muted">なし</span>';
+  $("#missing").innerHTML = missing.map((s) => `<span class="tag tag-miss">${escapeHtml(s)}</span>`).join("") || '<span class="muted">なし</span>';
+
+  const rows = [
+    ["必須スキル", req.join(", ") || "-", (profile.skills || []).join(", ") || "-", missing.length === 0],
+    ["日本語能力", job.reqJlpt || "不問", profile.jlpt || "-", !job.reqJlpt || (profile.jlpt && profile.jlpt <= job.reqJlpt)],
+  ];
+  $("#criteria").innerHTML = rows.map(([k, a, b, ok]) =>
+    `<tr><td>${k}</td><td>${escapeHtml(a)}</td><td>${escapeHtml(b)}</td>
+     <td><span class="tag ${ok ? "tag-ok" : "tag-miss"}">${ok ? "OK" : "不足"}</span></td></tr>`
+  ).join("");
+
+  // Flow: Tạo cột mốc cải thiện → S05 (from=S03)
+  $("#suggestions").innerHTML = missing.length
+    ? missing.map((s) => `
+        <li>
+          <div><strong>${escapeHtml(s)}</strong> を習得する<div class="muted">不足スキルを補うための小さな目標を作成</div></div>
+          <button class="btn btn-sm btn-primary" data-skill="${escapeHtml(s)}">改善目標を作成</button>
+        </li>`).join("")
+    : '<li class="empty">不足スキルはありません</li>';
+  $("#suggestions").addEventListener("click", (e) => {
+    const skill = e.target.dataset && e.target.dataset.skill;
+    if (skill) go("S05", { from: "S03", skill });
+  });
+
+  $("#btnEditJob").addEventListener("click", () => go("S02"));
+  $("#btnJourney").addEventListener("click", () => go("S04"));
+</script>
+</body>
+</html>

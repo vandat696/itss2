@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S05 小さな目標の詳細</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header data-screen="S05"></header>
+
+<main>
+  <h1 class="page-title"><span class="code">S05</span>小さな目標の詳細</h1>
+  <p class="page-sub">Chi tiết cột mốc — <span id="originLabel"></span></p>
+
+  <!-- Flow: Thiếu thông tin → bổ sung rồi lưu (self-loop) -->
+  <div class="alert alert-warning" id="missingInfo">
+    <strong>入力が不足しています。</strong>
+    <span class="alert-msg">赤枠の項目を入力してから保存してください。</span>
+  </div>
+
+  <form id="msForm" novalidate>
+    <section class="card">
+      <h2>目標 <span class="muted">Mục tiêu</span></h2>
+      <div class="field">
+        <label class="req" for="title">目標名</label>
+        <input type="text" id="title" name="title" required placeholder="例: SQLの基礎を学ぶ">
+      </div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="skill">関連スキル</label>
+          <input type="text" id="skill" name="skill">
+        </div>
+        <div class="field">
+          <label class="req" for="due">期限</label>
+          <input type="date" id="due" name="due" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="plan">行動計画</label>
+        <textarea id="plan" name="plan" placeholder="例: 週3回、オンライン講座を1章ずつ進める"></textarea>
+      </div>
+    </section>
+
+    <section class="card" id="recordCard">
+      <h2>達成の記録 <span class="muted">Ghi nhận hoàn thành</span></h2>
+      <div class="field">
+        <label for="note">振り返り・成果</label>
+        <textarea id="note" name="note" placeholder="学んだこと、成果物のリンクなど"></textarea>
+        <span class="hint">「達成して記録」を押すと目標が完了になります（振り返りの入力が必要です）。</span>
+      </div>
+    </section>
+
+    <div class="actions">
+      <!-- Flow: Hủy khi mở từ hành trình → S04 / Hủy khi mở từ kết quả → S03 -->
+      <button class="btn btn-ghost" type="button" id="btnCancel">キャンセル</button>
+      <!-- Flow: Lưu cột mốc / Hoàn thành và lưu ghi nhận → S04 -->
+      <button class="btn" type="submit" data-action="save">保存する</button>
+      <button class="btn btn-success" type="submit" data-action="done">達成して記録</button>
+    </div>
+  </form>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+  const from = param("from") === "S03" ? "S03" : "S04";
+  const id = param("id");
+  const form = $("#msForm");
+  const milestones = Store.get("milestones", []);
+  const current = milestones.find((m) => m.id === id);
+
+  $("#originLabel").textContent = from === "S03" ? "評価結果から作成" : (current ? "編集" : "新規作成");
+
+  if (current) {
+    ["title", "skill", "due", "plan", "note"].forEach((k) => { form.elements[k].value = current[k] || ""; });
+  } else if (param("skill")) {
+    form.elements.skill.value = param("skill");
+    form.elements.title.value = `${param("skill")} を習得する`;
+  }
+
+  $("#btnCancel").addEventListener("click", () => go(from));
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const action = e.submitter ? e.submitter.dataset.action : "save";
+    const noteEl = form.elements.note;
+    noteEl.required = action === "done";
+    const ok = validateRequired(form);
+    noteEl.required = false;
+    if (!ok) { showAlert("missingInfo"); return; }
+    hideAlert("missingInfo");
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    data.id = current ? current.id : String(Date.now());
+    data.status = action === "done" ? "done" : (current ? current.status : "todo");
+    const list = current ? milestones.map((m) => (m.id === data.id ? data : m)) : [...milestones, data];
+    Store.set("milestones", list);
+    go("S04", { msg: action === "done" ? "milestone_done" : "milestone_saved" });
+  });
+</script>
+</body>
+</html>
