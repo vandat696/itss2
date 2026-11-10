@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+enum RequirementType {
+  REQUIRED
+  PREFERRED
+  UNCLEAR
+}
+enum Criterion {
+  SKILL
+  MAJOR
+  EXPERIENCE
+  AVAILABILITY
+  OTHER
+}
+enum JobType {
+  INTERNSHIP
+  PART_TIME
+}
+enum Outcome {
+  MET
+  GAP
+  UNKNOWN
+}
+enum MilestoneType {
+  CV
+  SKILL
+  PROJECT
+  RESEARCH
+  INTERVIEW
+  CLARIFY
+}
+enum MilestoneStatus {
+  OPEN
+  COMPLETED
+}
+enum ProgressKind {
+  BASELINE
+  PROFILE
+  MILESTONE
+}
+model StudentProfile {
+  id          String @id
+  major       String
+  year        String
+  skills      Json
+  experience  String
+  months      Int?
+  projects    String
+  availability Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  snapshots   CvSnapshot[]
+  progress    ProgressRecord[]
+}
+model CvSnapshot {
+  id         String @id @default(cuid())
+  profileId  String
+  profile    StudentProfile @relation(fields: [profileId], references: [id])
+  original   String
+  fileKey    String @unique
+  skills     Json
+  createdAt  DateTime @default(now())
+}
+model JobPosting {
+  id           String @id @default(cuid())
+  title        String
+  company      String
+  major        String
+  type         JobType
+  description  String
+  schedule     String
+  experience   String
+  applyUrl     String?
+  sample       Boolean @default(false)
+  revision     Int @default(1)
+  confirmedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  requirements JobRequirement[]
+  assessments  MatchAssessment[]
+  saved        SavedJob?
+  milestones   Milestone[]
+}
+model JobRequirement {
+  id     String @id @default(cuid())
+  jobId  String
+  job    JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  type   RequirementType
+  kind   Criterion
+  value  String
+  order  Int
+}
+model MatchAssessment {
+  id              String @id @default(cuid())
+  jobId           String
+  job             JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobRevision     Int
+  profileRevision DateTime
+  percent         Int?
+  items           Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@unique([jobId, jobRevision, profileRevision])
+}
+model SavedJob {
+  jobId     String @id
+  job       JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+model Milestone {
+  id          String @id @default(cuid())
+  title       String
+  description String
+  type        MilestoneType
+  status      MilestoneStatus @default(OPEN)
+  learned     String
+  jobId       String?
+  job         JobPosting? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+}
+model ProgressRecord {
+  id        String @id @default(cuid())
+  profileId String?
+  profile   StudentProfile? @relation(fields: [profileId], references: [id])
+  kind      ProgressKind
+  title     String
+  detail    String
+  skills    Json?
+  createdAt DateTime @default(now())
+}
