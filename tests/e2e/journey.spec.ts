@@ -9,6 +9,10 @@ async function upload(page: Page, name: string) {
 
 test("hồ sơ, JD, đối chiếu, cột mốc và lịch sử sau khi tải lại", async ({ page }) => {
   await page.goto("/");
+  await expect(page).toHaveTitle(/Michii/);
+  await page.getByRole("link", { name: "Bắt đầu hành trình", exact: true }).click();
+  await expect(page).toHaveURL(/\/journey$/);
+  await page.getByRole("link", { name: "Tạo hồ sơ năng lực", exact: true }).click();
   await expect(page).toHaveURL(/\/profile$/);
   await page.getByLabel("Chuyên ngành").fill("Công nghệ thông tin");
   await page.getByLabel("Kỹ năng").fill("HTML");

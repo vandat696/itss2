@@ -1,6 +1,8 @@
-# Bước Nhỏ
+# Michii — ITSS2
 
 Ứng dụng hướng nghiệp cho sinh viên. Bạn có thể đối chiếu hồ sơ với yêu cầu tuyển dụng, chọn một việc cần cải thiện và ghi lại tiến bộ theo thời gian.
+
+Đã tích hợp landing Michii từ `origin/main` cùng ứng dụng Next.js/Prisma. Trang `/` hiển thị UI mới; các nút bắt đầu mở `/journey`. Nút **Xem bản mẫu nhanh** giữ trải nghiệm minh họa độc lập, không thay đổi dữ liệu đã lưu. Hồ sơ ở `/profile`, tin tuyển dụng ở `/jobs`.
 
 ## Chạy trên máy cá nhân
 
@@ -13,7 +15,9 @@ npm run db:setup
 npm run dev
 ```
 
-Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Bước Nhỏ](http://127.0.0.1:3000). Lệnh `db:setup` tạo tệp SQLite nếu chưa có (hỗ trợ khởi tạo trên Windows), tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
+Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Michii](http://127.0.0.1:3000). Lệnh `db:setup` tạo tệp SQLite nếu chưa có (hỗ trợ khởi tạo trên Windows), tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
+
+`npm run dev` và `npm run build` tự chuẩn bị landing và tài nguyên trong `public/landing/`. Sửa nguồn tại `index.html`, `styles.css`, `app.js`, `assets/`, rồi khởi động lại dev server. `npm run check` kiểm tra nguồn landing; `npm run build:landing` tạo bản tĩnh riêng ở `dist/`. Bản tĩnh chỉ phục vụ phần giới thiệu/bản mẫu; các liên kết `/journey` cần chạy ứng dụng Next.js. Xem [Landing](docs/LANDING.md).
 
 Để chạy bản production trên máy cá nhân, dùng `npm run build` rồi `npm start`.
 

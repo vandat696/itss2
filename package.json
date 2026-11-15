@@ -1,10 +1,12 @@
 {
-  "name": "buoc-nho",
+  "name": "michii",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack --hostname 127.0.0.1",
-    "build": "next build --webpack",
+    "dev": "node scripts/prepare-landing.mjs && next dev --webpack --hostname 127.0.0.1",
+    "build": "node scripts/prepare-landing.mjs && next build --webpack",
+    "build:landing": "node scripts/build.mjs",
+    "check": "node --check app.js && node scripts/check.mjs",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
