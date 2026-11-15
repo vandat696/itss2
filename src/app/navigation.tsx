@@ -12,7 +12,7 @@ const links = [
 export function Navigation() {
   const path = usePathname();
   return <div className="topbar"><div className="shell topbar-inner">
-    <Link className="brand" href="/"><span className="brand-icon"><Compass size={23} /></span><span>Bước Nhỏ<small>HƯỚNG NGHIỆP SINH VIÊN</small></span></Link>
+    <a className="brand" href="/"><span className="brand-icon"><Compass size={23} /></span><span>Michii<small>HƯỚNG NGHIỆP SINH VIÊN</small></span></a>
     <nav aria-label="Điều hướng chính">{links.map(({ href, label, icon: Icon }) => {
       const active = path.startsWith(href) || (href === "/journey" && path.startsWith("/milestones"));
       return <Link key={href} href={href} aria-current={active ? "page" : undefined}><Icon size={16} />{label}</Link>;
