@@ -103,3 +103,18 @@ em{color:#6860c0}
 .small-leaf>svg,.preview-corner>svg,.faq-flower>svg,.cta-spark>svg{width:1em;height:1em}
 .hero-note>button{border:0;background:transparent;padding:0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px}
 .faq-flower{color:#a18bd0}
+.application-section{background:#fff}
+.landing-application-grid{display:grid;grid-template-columns:1fr 1fr;gap:90px;align-items:center}
+.landing-application-copy p{color:#697088;font-size:13px;line-height:1.9;margin:22px 0;max-width:43ch}
+.landing-application-note{display:block;font-size:10px;color:#818397;margin-top:14px}
+.landing-application-preview{background:#faf9fe;border:1px solid #e7e0f4;border-radius:17px;padding:26px;box-shadow:0 20px 55px #4a32800a}
+.landing-tracker-heading{display:flex;align-items:center;gap:9px;color:#756397;font-size:12px;padding-bottom:19px;border-bottom:1px solid #e9e4f2}
+.landing-tracker-heading>span{margin-left:auto;font-size:9px;color:#8a829b;background:#f0edf7;padding:3px 8px;border-radius:5px}
+.landing-tracker-row{display:flex;align-items:center;gap:12px;padding:22px 0;border-bottom:1px solid #e9e4f2}
+.landing-tracker-row>div{flex:1;min-width:0}.landing-tracker-row strong{display:block;font-size:12px}.landing-tracker-row small{display:block;font-size:10px;color:#8a829b;margin-top:4px}
+.landing-tracker-icon{display:grid;place-items:center;width:35px;height:35px;background:#eee8fa;color:#8a72b5;border-radius:10px;flex-shrink:0}.landing-tracker-icon>.icon{height:17px;width:17px}
+.landing-tracker-status{font-size:9px;color:#776098;background:#eee8fa;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.landing-tracker-icon.warm,.landing-tracker-status.warm{color:#a47750;background:#fff0e3}
+.landing-tracker-footer{display:flex;gap:8px;align-items:center;font-size:10px;color:#8a829b;margin-top:19px}.landing-tracker-footer>.icon{width:14px;height:14px}
+@media(max-width:900px){.landing-application-grid{gap:32px}.landing-tracker-row{gap:8px}.landing-tracker-row strong{font-size:10px}.landing-tracker-row small{font-size:9px}.landing-tracker-status{font-size:8px}}
+@media(max-width:700px){.landing-application-grid{grid-template-columns:1fr;gap:28px}.landing-application-preview{padding:20px}.landing-tracker-row strong{font-size:11px}.landing-tracker-row small{font-size:10px}.landing-application-note{font-size:9px}}

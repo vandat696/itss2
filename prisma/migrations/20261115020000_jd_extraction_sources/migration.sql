@@ -1,0 +1,3 @@
+ALTER TABLE "JobPosting" ADD COLUMN "jdText" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "JobRequirement" ADD COLUMN "sourceText" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "JobRequirement" ADD COLUMN "reviewed" BOOLEAN NOT NULL DEFAULT false;

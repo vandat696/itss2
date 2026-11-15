@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, BriefcaseBusiness, Compass, Route, UserRound } from "lucide-react";
+import { ArrowUpRight, BriefcaseBusiness, Compass, Route, Send, UserRound } from "lucide-react";
 
 const links = [
   { href: "/journey", label: "Hành trình", icon: Route },
   { href: "/jobs", label: "Tuyển dụng", icon: BriefcaseBusiness },
+  { href: "/applications", label: "Ứng tuyển", icon: Send },
   { href: "/profile", label: "Hồ sơ", icon: UserRound },
 ];
 export function Navigation() {

@@ -11,7 +11,7 @@ for (const match of html.matchAll(/\bhref="#([^"]+)"/g)) {
   assert(ids.includes(match[1]), `Missing anchor: ${match[1]}`);
 }
 for (const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)) {
-  if (match[1].startsWith('/')) assert(['/journey', '/profile', '/jobs'].includes(match[1]), `Unknown application route: ${match[1]}`);
+  if (match[1].startsWith('/')) assert(['/journey', '/profile', '/jobs', '/applications'].includes(match[1]), `Unknown application route: ${match[1]}`);
   else if (!/^https?:/.test(match[1])) await access(resolve(root, match[1]));
 }
 for (const match of css.matchAll(/url\('([^']+)'\)/g)) await access(resolve(root, match[1]));

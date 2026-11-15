@@ -4,6 +4,28 @@
 
 Đã tích hợp landing Michii từ `origin/main` cùng ứng dụng Next.js/Prisma. Trang `/` hiển thị UI mới; các nút bắt đầu mở `/journey`. Nút **Xem bản mẫu nhanh** giữ trải nghiệm minh họa độc lập, không thay đổi dữ liệu đã lưu. Hồ sơ ở `/profile`, tin tuyển dụng ở `/jobs`.
 
+## Theo dõi ứng tuyển
+
+Mở `/applications` hoặc mục **Ứng tuyển** trên thanh điều hướng. Có thể ghi nhận một đơn riêng, hoặc chọn **Theo dõi đơn ứng tuyển** từ tin tuyển dụng/kết quả đánh giá để điền sẵn thông tin.
+
+- Thêm, sửa, xóa đơn; các trạng thái: đã nộp, đang xét, phỏng vấn, nhận đề nghị, chưa phù hợp và đã rút.
+- Ghi ngày nộp, lịch phỏng vấn (giờ Việt Nam UTC+7), ngày cần theo dõi, người liên hệ và ghi chú. Ngày nộp không ở tương lai, các ngày hẹn không trước ngày nộp.
+- Tìm theo vị trí, doanh nghiệp, người liên hệ hoặc ghi chú; lọc theo trạng thái. Trang tổng quan hiển thị cuộc hẹn sắp tới và các đơn đang theo đuổi đã đến ngày liên hệ lại. Đây là nhắc việc trong trang, chưa gửi email hoặc thông báo nền.
+- Một tin tuyển dụng liên kết với tối đa một đơn. Lịch sử được ghi khi tạo đơn hoặc thay đổi trạng thái; sửa ghi chú không nhân đôi sự kiện. Xóa đơn sẽ xóa cả lịch sử của đơn.
+- Michii ghi nhận các đơn bạn đã nộp; thao tác lưu không gửi CV hoặc liên hệ doanh nghiệp. Các tin giả lập tiếp tục có nhãn **Tin mẫu**.
+
+Nếu cập nhật từ bản cũ, chạy `npm run db:setup` trước khi khởi động để thêm các bảng theo dõi ứng tuyển. Migration giữ nguyên dữ liệu hồ sơ, CV, tin tuyển dụng và cột mốc hiện có.
+
+## Gợi ý yêu cầu từ JD và giải thích đánh giá
+
+Trong trang nhập/sửa tin, dán **Nội dung JD gốc** rồi chọn **Gợi ý yêu cầu từ JD**. Bộ quy tắc tại máy nhận diện một số kỹ năng phổ biến, chuyên ngành, số tháng/năm kinh nghiệm và ca làm rõ ngày giờ. Đề mục hoặc từ khóa bắt buộc/ưu tiên được dùng để gợi ý mức độ. Không gọi AI, tải URL hoặc gửi JD ra dịch vụ ngoài.
+
+Chọn các gợi ý muốn thêm, sửa cách diễn đạt/mức độ nếu cần và đánh dấu **Đã kiểm tra nội dung và mức độ với JD gốc** cho từng mục. Lưu nháp được phép chưa xác nhận; server chặn đánh giá nếu còn mục gợi ý chưa kiểm tra. Sửa nội dung, loại, mức độ hoặc JD gốc sẽ yêu cầu xác nhận lại. Nếu đoạn trích không còn nằm trong JD mới, cần xóa mục cũ và gợi ý lại. JD gốc và đoạn trích được lưu cùng yêu cầu.
+
+Các câu lựa chọn/phủ định, mức độ hỗn hợp, lịch linh hoạt, lịch chưa xác định cặp ngày/giờ và kinh nghiệm theo khoảng được giữ ở mức **Chưa rõ**. Nội dung chưa nhận diện có danh sách để đọc thủ công; tối đa 20.000 ký tự JD và 30 tiêu chí. Bộ quy tắc chỉ hỗ trợ một số cách viết tiếng Việt/Anh, không bảo đảm hiểu đầy đủ JD. Các ngành và kỹ năng tương đương cần người dùng xác nhận.
+
+Kết quả chia thành **Điểm mạnh**, **Điều có thể cải thiện** và **Thông tin cần hỏi thêm**. Tỷ lệ chỉ tính các tiêu chí đủ thông tin theo trọng số; số mục chưa xác định hiển thị riêng. Mỗi mục có giải thích, bằng chứng hồ sơ tại lần đối chiếu và đoạn JD gốc nếu có. Tự đổi mức đáp ứng được ghi là **Bạn tự xác nhận**. Có thể tạo mục tiêu cải thiện hoặc ghi lại câu cần hỏi ngay từ từng mục. Bản đánh giá cũ giữ nguyên bằng chứng/đoạn trích dù hồ sơ hoặc JD đã đổi; các bản lưu từ trước tính năng này có thể chưa có giải thích chi tiết.
+
 ## Chạy trên máy cá nhân
 
 Cần Node.js 22.13+ hoặc Node.js 24 và npm.

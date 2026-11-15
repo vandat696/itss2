@@ -43,6 +43,14 @@ enum ProgressKind {
   PROFILE
   MILESTONE
 }
+enum ApplicationStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
 model StudentProfile {
   id          String @id
   major       String
@@ -73,6 +81,7 @@ model JobPosting {
   major        String
   type         JobType
   description  String
+  jdText       String @default("")
   schedule     String
   experience   String
   applyUrl     String?
@@ -85,6 +94,7 @@ model JobPosting {
   assessments  MatchAssessment[]
   saved        SavedJob?
   milestones   Milestone[]
+  application  JobApplication?
 }
 model JobRequirement {
   id     String @id @default(cuid())
@@ -93,6 +103,8 @@ model JobRequirement {
   type   RequirementType
   kind   Criterion
   value  String
+  sourceText String @default("")
+  reviewed Boolean @default(false)
   order  Int
 }
 model MatchAssessment {
@@ -135,4 +147,33 @@ model ProgressRecord {
   detail    String
   skills    Json?
   createdAt DateTime @default(now())
+}
+
+model JobApplication {
+  id          String @id @default(cuid())
+  title       String
+  company     String
+  status      ApplicationStatus @default(APPLIED)
+  appliedOn   String
+  interviewAt DateTime?
+  followUpOn  String?
+  contact     String
+  notes       String
+  applyUrl    String?
+  jobId       String? @unique
+  job         JobPosting? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  events      ApplicationEvent[]
+  @@index([status, updatedAt])
+}
+
+model ApplicationEvent {
+  id            String @id @default(cuid())
+  applicationId String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus
+  note          String
+  createdAt     DateTime @default(now())
+  @@index([applicationId, createdAt])
 }

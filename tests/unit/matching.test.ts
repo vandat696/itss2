@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Evidence, Item, MatchingService, Requirement, score } from "@/modules/matching/domain";
+import { assessmentSummary, Evidence, Item, MatchingService, Requirement, score, selfAssessmentExplanation } from "@/modules/matching/domain";
 
 const profile: Evidence = {
   major: "Kỹ thuật", skills: [" HTML ", "Git"], months: 0,
@@ -30,5 +30,20 @@ describe("đối chiếu yêu cầu", () => {
     expect(score([item("REQUIRED", "GAP")])).toBe(0);
     expect(score([item("UNCLEAR", "GAP"), item("REQUIRED", "UNKNOWN")])).toBeNull();
     expect(score([])).toBeNull();
+  });
+  it("lưu bằng chứng và giải thích tại thời điểm đối chiếu, tách rõ phần chưa biết", () => {
+    const items = new MatchingService().assess(profile, [
+      { ...requirement("SKILL", "HTML"), sourceText: "Bắt buộc: HTML" },
+      requirement("SKILL", "React"), requirement("OTHER", "Lịch linh hoạt", "UNCLEAR"),
+    ]);
+    expect(items[0]).toMatchObject({ outcome: "MET", method: "AUTOMATIC", sourceText: "Bắt buộc: HTML" });
+    expect(items[0].evidence).toContain("Git");
+    expect(items[1].explanation).toContain("Chưa tìm thấy tên kỹ năng");
+    expect(items[2].explanation).toContain("chưa được tính điểm");
+    expect(assessmentSummary(items)).toEqual({ assessed: 2, met: 1, unknown: 1, requiredGaps: 1 });
+    expect(selfAssessmentExplanation("UNKNOWN")).toContain("Bạn đã đánh dấu");
+    const missing = new MatchingService().assess(null, [requirement("SKILL", "HTML")]);
+    expect(score(missing)).toBeNull();
+    expect(assessmentSummary(missing).unknown).toBe(1);
   });
 });

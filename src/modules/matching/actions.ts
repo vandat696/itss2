@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/shared/db";
 import { ActionState, FormError, formFailure, input } from "@/shared/forms";
 import { profileId } from "@/modules/profile/data";
-import { outcomes, Outcome, score } from "./domain";
+import { outcomes, Outcome, score, selfAssessmentExplanation } from "./domain";
 import { itemSchema, noProfileRevision } from "./data";
 
 export async function updateAssessment(id: string, _: ActionState, form: FormData): Promise<ActionState> {
@@ -23,7 +23,7 @@ export async function updateAssessment(id: string, _: ActionState, form: FormDat
         if (item.type === "UNCLEAR") return item;
         const selected = input(form, `outcome-${item.id}`) as Outcome;
         if (!outcomes.includes(selected)) throw new FormError("Hãy kiểm tra trạng thái của từng tiêu chí.");
-        return { ...item, outcome: selected };
+        return selected === item.outcome ? item : { ...item, outcome: selected, method: "SELF" as const, explanation: selfAssessmentExplanation(selected) };
       });
       await tx.matchAssessment.update({ where: { id }, data: { percent: score(items), items } });
       if (save) await tx.savedJob.upsert({ where: { jobId: row.jobId }, create: { jobId: row.jobId }, update: {} });

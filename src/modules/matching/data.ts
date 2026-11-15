@@ -5,6 +5,7 @@ import { MatchingService, criteria, outcomes, requirementTypes, score } from "./
 
 export const itemSchema = z.array(z.object({
   id: z.string(), kind: z.enum(criteria), type: z.enum(requirementTypes), value: z.string(), outcome: z.enum(outcomes),
+  sourceText: z.string().optional(), explanation: z.string().optional(), evidence: z.string().optional(), method: z.enum(["AUTOMATIC", "SELF"]).optional(),
 }));
 export const noProfileRevision = new Date(0);
 export const assessmentKey = (id: string, revision: number, updatedAt: Date | undefined) => ({
@@ -20,7 +21,7 @@ export async function recordAssessment(jobId: string) {
   const key = assessmentKey(job.id, job.revision, profile?.updatedAt);
   let row = await db.matchAssessment.findUnique({ where: { jobId_jobRevision_profileRevision: key } });
   if (!row) {
-    const items = new MatchingService().assess(profile, job.requirements.map(({ id, type, kind, value }) => ({ id, type, kind, value })));
+    const items = new MatchingService().assess(profile, job.requirements.map(({ id, type, kind, value, sourceText }) => ({ id, type, kind, value, sourceText })));
     row = await db.matchAssessment.upsert({
       where: { jobId_jobRevision_profileRevision: key }, create: { ...key, percent: score(items), items }, update: {},
     });

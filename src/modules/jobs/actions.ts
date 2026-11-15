@@ -7,7 +7,7 @@ import { ActionState, FormError, formFailure, input, long, required, short, vali
 import { criteria, parseSlot, requirementTypes } from "@/modules/matching/domain";
 import { jobTypes } from "./data";
 
-const requirementSchema = z.object({ type: z.enum(requirementTypes), kind: z.enum(criteria), value: required("Hãy điền nội dung của từng yêu cầu.") }).superRefine((item, context) => {
+const requirementSchema = z.object({ type: z.enum(requirementTypes), kind: z.enum(criteria), value: required("Hãy điền nội dung của từng yêu cầu."), sourceText: z.string().trim().max(1000), reviewed: z.boolean() }).superRefine((item, context) => {
   if (item.type === "UNCLEAR") return;
   if (item.kind === "AVAILABILITY" && !parseSlot(item.value)) context.addIssue({ code: "custom", message: "Lịch cần có dạng 2 09:00-12:00 (2–8, với 8 là Chủ nhật)." });
   if (item.kind === "EXPERIENCE" && !/^\d{1,3}$/.test(item.value)) context.addIssue({ code: "custom", message: "Kinh nghiệm cần là số tháng nguyên từ 0 đến 999." });
@@ -15,6 +15,7 @@ const requirementSchema = z.object({ type: z.enum(requirementTypes), kind: z.enu
 const jobSchema = z.object({
   title: required("Hãy nhập tên vị trí."), company: required("Hãy nhập tên doanh nghiệp."), major: short,
   type: z.enum(jobTypes), description: long, schedule: short, experience: short,
+  jdText: z.string().max(20000, "JD tối đa 20.000 ký tự."),
   applyUrl: z.union([z.url({ protocol: /^https?$/ }).max(2048), z.literal("")]),
   requirements: z.array(requirementSchema).max(30),
 });
@@ -27,10 +28,14 @@ export async function saveJob(id: string, _: ActionState, form: FormData): Promi
       title: input(form, "title"), company: input(form, "company"), major: input(form, "major"),
       type: input(form, "type"), description: input(form, "description"), schedule: input(form, "schedule"),
       experience: input(form, "experience"), applyUrl: input(form, "applyUrl").trim(),
+      jdText: input(form, "jdText"),
       requirements: form.getAll("criterion").map((kind, index) => ({
         kind, type: form.getAll("category")[index], value: form.getAll("value")[index],
+        sourceText: form.getAll("sourceText")[index] ?? "", reviewed: form.getAll("reviewed")[index] === "true",
       })),
     });
+    if (confirm && requirements.some((item) => item.sourceText && !item.reviewed)) throw new FormError("Hãy kiểm tra và xác nhận từng tiêu chí được gợi ý từ JD trước khi đánh giá.");
+    if (confirm && requirements.some((item) => item.sourceText && !fields.jdText.includes(item.sourceText))) throw new FormError("Một số đoạn trích không còn nằm trong JD gốc. Hãy xóa các mục không còn đúng và gợi ý lại từ JD mới trước khi đánh giá.");
     const data = { ...fields, applyUrl: applyUrl || null, confirmedAt: confirm ? new Date() : null };
     const rows = requirements.map((item, order) => ({ ...item, order }));
     const job = await db.$transaction(async (tx) => {
@@ -42,7 +47,7 @@ export async function saveJob(id: string, _: ActionState, form: FormData): Promi
         || rows.length !== previous.requirements.length
         || rows.some((row, index) => {
           const old = previous.requirements[index];
-          return old.type !== row.type || old.kind !== row.kind || old.value !== row.value;
+          return old.type !== row.type || old.kind !== row.kind || old.value !== row.value || old.sourceText !== row.sourceText || old.reviewed !== row.reviewed;
         });
       if (!changed) return tx.jobPosting.update({ where: { id }, data: { confirmedAt: confirm ? new Date() : previous.confirmedAt } });
       return tx.jobPosting.update({

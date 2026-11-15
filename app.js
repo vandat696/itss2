@@ -211,6 +211,9 @@ dialog.addEventListener('click', (event) => {
 });
 dialog.addEventListener('close', () => {
   document.body.style.overflow = previousOverflow;
+  // Native dialog restoration may already have returned focus. Do not steal
+  // focus if the visitor has moved to another control before this event runs.
+  if (document.activeElement !== document.body && !dialog.contains(document.activeElement)) return;
   if (demoOpener?.getClientRects().length) demoOpener.focus({ preventScroll: true });
   else menuToggle.focus({ preventScroll: true });
 });

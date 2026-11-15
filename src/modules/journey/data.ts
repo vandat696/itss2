@@ -3,7 +3,7 @@ import { readProfile, skillsSchema } from "@/modules/profile/data";
 import { progressMetrics } from "./domain";
 
 export async function readJourney() {
-  const [profile, milestones, timeline, assessedJobs, saved, cvCount] = await Promise.all([
+  const [profile, milestones, timeline, assessedJobs, saved, cvCount, applications] = await Promise.all([
     readProfile(),
     db.milestone.findMany({ orderBy: { createdAt: "desc" } }),
     db.progressRecord.findMany({ orderBy: [{ createdAt: "desc" }, { id: "desc" }] }),
@@ -14,9 +14,10 @@ export async function readJourney() {
     }),
     db.savedJob.count(),
     db.cvSnapshot.count(),
+    db.jobApplication.findMany({ orderBy: { updatedAt: "desc" }, take: 3, select: { id: true, title: true, company: true, status: true } }),
   ]);
   const initial = timeline.findLast((event) => event.kind === "BASELINE");
   const initialSkills = skillsSchema.parse(initial?.skills ?? []);
   const metrics = progressMetrics(profile?.skills ?? [], initialSkills, milestones, cvCount);
-  return { profile, milestones, timeline, assessedJobs, saved, initialSkills, assessed: assessedJobs.filter((job) => job.assessments.length).length, initial, ...metrics };
+  return { profile, milestones, timeline, assessedJobs, saved, applications, initialSkills, assessed: assessedJobs.filter((job) => job.assessments.length).length, initial, ...metrics };
 }

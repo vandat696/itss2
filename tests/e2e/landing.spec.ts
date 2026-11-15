@@ -7,14 +7,14 @@ test("UI Michii mới nối với ứng dụng và giữ bản trải nghiệm m
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Đi từng bước nhỏ.");
   await expect(page.locator(".topbar")).toHaveCount(0);
   await expect(page.locator(".header")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Theo dõi các đơn đã nộp" })).toHaveAttribute("href", "/applications");
   await page.getByRole("button", { name: "Xem bản mẫu nhanh" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await expect(page.getByRole("button", { name: "Xem bản mẫu nhanh" })).toBeFocused();
   const tabs = page.getByRole("tablist", { name: "Các bước trải nghiệm" });
-  await tabs.getByRole("tab").first().focus();
-  await page.keyboard.press("ArrowRight");
+  await tabs.getByRole("tab").first().press("ArrowRight");
   await expect(tabs.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: "Bắt đầu hành trình", exact: true }).click();
   await expect(page).toHaveURL(/\/journey$/);

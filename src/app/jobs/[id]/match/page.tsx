@@ -6,6 +6,7 @@ import { AssessmentForm } from "@/modules/matching/form";
 import { Back, Heading, SectionTitle } from "@/shared/ui";
 
 import { SearchParams, singleValues } from "@/shared/query";
+import { assessmentSummary } from "@/modules/matching/domain";
 
 export const dynamic = "force-dynamic";
 export default async function MatchPage({ params, searchParams }: {
@@ -17,6 +18,7 @@ export default async function MatchPage({ params, searchParams }: {
   if (!result?.job) redirect("/jobs");
   if (!result.assessment) redirect(`/jobs?job=${id}`);
   const { job, profile, assessment } = result;
+  const summary = assessmentSummary(assessment.items);
   const matchHref = `/jobs/${id}/match`;
   const isHistorical = Boolean(query.assessment && (assessment.jobRevision !== job.revision || assessment.profileRevision.getTime() !== (profile?.updatedAt?.getTime() ?? 0)));
   const gaps = assessment.items.filter((item) => item.outcome === "GAP" && item.type === "REQUIRED");
@@ -34,14 +36,20 @@ export default async function MatchPage({ params, searchParams }: {
           <div><span className="hero-kicker"><Sparkles size={15} /> ĐỐI CHIẾU HỒ SƠ</span><h2>{assessment.percent === null ? "Chưa đủ thông tin để đánh giá" : "Mức độ phù hợp ước tính"}</h2><p>{assessment.percent === null ? "Hãy bổ sung hồ sơ, làm rõ yêu cầu hoặc tự kiểm tra từng tiêu chí." : "Tỷ lệ này phản ánh các tiêu chí đã xác định, không phải xác suất trúng tuyển."}</p></div>
           {assessment.percent !== null && <strong className="score-number">{assessment.percent}%</strong>}
         </section>
+        <section className="assessment-overview card stack" aria-label="Phạm vi kết quả đánh giá">
+          <p><strong>{summary.assessed} / {assessment.items.length} tiêu chí đủ thông tin</strong> để tính tỷ lệ theo trọng số.</p>
+          <div className="assessment-totals"><div><strong>{summary.met}</strong><span>Điểm mạnh</span></div><div><strong>{summary.assessed - summary.met}</strong><span>Có thể cải thiện</span></div><div><strong>{summary.unknown}</strong><span>Cần hỏi thêm</span></div></div>
+          {!assessment.items.length ? <p className="muted">Chưa có tiêu chí để đánh giá. Bạn có thể bổ sung yêu cầu từ JD trước.</p> : summary.unknown > 0 ? <p className="assessment-reassurance">Còn {summary.unknown} tiêu chí cần bổ sung hoặc xác nhận, chưa được tính vào tỷ lệ. Những điểm chưa rõ trong JD không phải kết luận về năng lực của bạn.</p> : <p className="muted">Tất cả tiêu chí hiện đã có kết quả đối chiếu. Bạn vẫn có thể trao đổi với nhà tuyển dụng về cách đáp ứng trong thực tế.</p>}
+        </section>
         {gaps.length > 0 && <div className="notice amber"><strong>Yêu cầu bắt buộc cần bổ sung</strong><p>{gaps.map((item) => item.value).join(" · ")}</p></div>}
-        <AssessmentForm key={`${assessment.id}-${assessment.updatedAt.getTime()}`} id={assessment.id} items={assessment.items} historical={isHistorical} saved={Boolean(job.saved)} />
+        <AssessmentForm key={`${assessment.id}-${assessment.updatedAt.getTime()}`} id={assessment.id} jobId={id} items={assessment.items} historical={isHistorical} saved={Boolean(job.saved)} />
       </div>
       <aside className="stack">
         <section className="card stack"><SectionTitle>Bước tiếp theo</SectionTitle>
           <Link className="button primary" href={milestoneHref}><ListPlus size={17} /> Tạo cột mốc cải thiện</Link>
           <Link className="button secondary" href={`/profile?job=${id}`}>{profile ? "Cập nhật hồ sơ" : "Nhập hồ sơ"}</Link>
           <Link className="button secondary" href={`/jobs?job=${id}#job-detail`}>Sửa yêu cầu tuyển dụng</Link>
+          <Link className="button secondary" href={`/applications/new?job=${encodeURIComponent(id)}`}>Theo dõi đơn ứng tuyển</Link>
           {applyUrl && <a className="button secondary" href={applyUrl} target="_blank" rel="noopener noreferrer">Mở trang ứng tuyển <ArrowUpRight size={15} /></a>}
           <Link className="text-link" href="/journey">Xem hành trình</Link>
         </section>

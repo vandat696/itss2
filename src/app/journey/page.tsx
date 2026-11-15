@@ -4,6 +4,7 @@ import { readJourney } from "@/modules/journey/data";
 import { calendarToday, deadlineState, dueDateLabel, milestoneLabels } from "@/modules/milestones/domain";
 import { dateLabel, Empty, Heading, RowLink, SectionTitle } from "@/shared/ui";
 import { SearchParams, singleValues } from "@/shared/query";
+import { statusLabels, statusTones } from "@/modules/applications/domain";
 
 export const dynamic = "force-dynamic";
 export default async function JourneyPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -51,6 +52,7 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
         </section>
       </div>
       <aside className="stack">
+        <section className="card stack"><SectionTitle detail="Các đơn vừa cập nhật, để bạn tiếp tục từ nơi đã dừng.">Ứng tuyển gần đây</SectionTitle>{data.applications.length ? data.applications.map((item) => <RowLink key={item.id} href={`/applications/${item.id}`} title={item.title} detail={item.company} badge={<span className={`tag ${statusTones[item.status]}`}>{statusLabels[item.status]}</span>} />) : <p className="muted">Ghi nhận những đơn đã nộp để theo dõi phản hồi và lịch phỏng vấn.</p>}<Link className="text-link actions" href="/applications">Theo dõi ứng tuyển <ArrowUpRight size={15} /></Link></section>
         <section className="card stack"><div className="aside-note"><span className="tile-icon"><Flag size={19} /></span><SectionTitle>Điểm xuất phát</SectionTitle></div>
           {data.initial ? <><strong>{data.initial.title}</strong><p className="muted">{dateLabel(data.initial.createdAt)} · {data.initial.detail}</p>{data.initialSkills.length > 0 && <div className="tags">{data.initialSkills.map((skill) => <span className="tag" key={skill}>{skill}</span>)}</div>}{data.profile?.snapshots.length ? <small>CV gần nhất: {data.profile.snapshots[0].original}</small> : <small>Chưa đính kèm CV</small>}</> : <Empty title="Chưa có hồ sơ"><Link className="text-link" href="/profile">Thiết lập hồ sơ</Link></Empty>}
         </section>
