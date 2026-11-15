@@ -14,7 +14,7 @@ Mở `/applications` hoặc mục **Ứng tuyển** trên thanh điều hướng
 - Một tin tuyển dụng liên kết với tối đa một đơn. Lịch sử được ghi khi tạo đơn hoặc thay đổi trạng thái; sửa ghi chú không nhân đôi sự kiện. Xóa đơn sẽ xóa cả lịch sử của đơn.
 - Michii ghi nhận các đơn bạn đã nộp; thao tác lưu không gửi CV hoặc liên hệ doanh nghiệp. Các tin giả lập tiếp tục có nhãn **Tin mẫu**.
 
-Nếu cập nhật từ bản cũ, chạy `npm run db:setup` trước khi khởi động để thêm các bảng theo dõi ứng tuyển. Migration giữ nguyên dữ liệu hồ sơ, CV, tin tuyển dụng và cột mốc hiện có.
+Nếu cập nhật từ bản PostgreSQL cũ, chạy `npm run db:setup` trước khi khởi động để thêm bảng ứng tuyển và các trường JD. Các migration bổ sung giữ nguyên dữ liệu PostgreSQL hiện có. Dữ liệu SQLite từ bản demo trước không tự chuyển sang PostgreSQL; giữ lại tệp `.db` cũ nếu cần chuyển dữ liệu riêng.
 
 ## Gợi ý yêu cầu từ JD và giải thích đánh giá
 
@@ -28,20 +28,38 @@ Kết quả chia thành **Điểm mạnh**, **Điều có thể cải thiện** 
 
 ## Chạy trên máy cá nhân
 
-Cần Node.js 22.13+ hoặc Node.js 24 và npm.
+Cần Node.js 22.13+ hoặc Node.js 24, npm và một database PostgreSQL (khuyến nghị Neon).
 
 ```powershell
 npm ci
 Copy-Item .env.example .env
+# Điền DATABASE_URL và DIRECT_URL trong .env
 npm run db:setup
 npm run dev
 ```
 
-Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Michii](http://127.0.0.1:3000). Lệnh `db:setup` tạo tệp SQLite nếu chưa có (hỗ trợ khởi tạo trên Windows), tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
+Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Michii](http://127.0.0.1:3000). Lệnh `db:setup` kiểm tra kết nối PostgreSQL, tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
 
 `npm run dev` và `npm run build` tự chuẩn bị landing và tài nguyên trong `public/landing/`. Sửa nguồn tại `index.html`, `styles.css`, `app.js`, `assets/`, rồi khởi động lại dev server. `npm run check` kiểm tra nguồn landing; `npm run build:landing` tạo bản tĩnh riêng ở `dist/`. Bản tĩnh chỉ phục vụ phần giới thiệu/bản mẫu; các liên kết `/journey` cần chạy ứng dụng Next.js. Xem [Landing](docs/LANDING.md).
 
 Để chạy bản production trên máy cá nhân, dùng `npm run build` rồi `npm start`.
+
+## Deploy lên Vercel với Neon
+
+1. Tạo một project PostgreSQL trên Neon và lấy hai connection string:
+   - `DATABASE_URL`: connection string pooled của Neon, thường có `-pooler`.
+   - `DIRECT_URL`: connection string trực tiếp, dùng cho migration.
+2. Điền hai biến này vào `.env` local theo mẫu `.env.example`.
+3. Khởi tạo database và dữ liệu mẫu:
+
+```powershell
+npm run db:setup
+```
+
+4. Trên Vercel, import repository với thư mục gốc hiện tại và thêm `DATABASE_URL`, `DIRECT_URL` trong **Settings → Environment Variables** cho môi trường cần deploy.
+5. Dùng build command mặc định `npm run build`. Không đặt `npm start` làm lệnh deploy trên Vercel.
+
+SQLite local và thư mục `data/cv/` không được dùng cho dữ liệu production trên Vercel. CV cần được chuyển sang object storage như Vercel Blob hoặc S3 trước khi bật upload production.
 
 ## Kiểm thử
 
@@ -54,11 +72,11 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Có thể dùng Chrome đã cài bằng cách đặt `PLAYWRIGHT_CHANNEL=chrome`. Với PowerShell, dùng `$env:PLAYWRIGHT_CHANNEL = "chrome"`. Playwright dùng bản build production, cổng 3011 và một SQLite riêng cho mỗi lần chạy. Tệp kiểm thử nằm trong `prisma/e2e-*.db` và `data/e2e-*`, được Git bỏ qua.
+Có thể dùng Chrome đã cài bằng cách đặt `PLAYWRIGHT_CHANNEL=chrome`. Với PowerShell, dùng `$env:PLAYWRIGHT_CHANNEL = "chrome"`. Playwright dùng bản build production, cổng 3011 và cần một database Neon riêng cho test qua `E2E_DATABASE_URL` và `E2E_DIRECT_URL`. CV test nằm trong `data/e2e-*`, được Git bỏ qua.
 
 ## Dữ liệu và phạm vi
 
-- SQLite mặc định ở `prisma/local.db`. Tệp CV được lưu dưới `data/cv/` với định danh riêng. Cả hai nằm ngoài các tệp được Git theo dõi.
+- Database dùng PostgreSQL qua `DATABASE_URL`; `DIRECT_URL` là kết nối trực tiếp dùng cho migration. Tệp CV hiện được lưu dưới `data/cv/` với định danh riêng.
 - CV là PDF tối đa 5 MB. Quy tắc đối chiếu dùng dữ liệu nhập tay. Trang hồ sơ hiển thị 5 phiên bản gần nhất và cho phép tải lại tệp gốc, chưa trích xuất nội dung PDF. Route tải CV dùng bản ghi của hồ sơ demo, không chấp nhận đường dẫn tệp từ người dùng và không lưu cache.
 - Cột mốc có hạn hoàn thành tùy chọn. Hành trình đánh dấu đến hạn hôm nay, quá hạn và có bộ lọc đang mở / quá hạn / hoàn thành. Các mục đang mở được xếp theo hạn gần nhất. Ngày hạn được giữ nguyên theo lịch; trạng thái hôm nay dùng múi giờ Việt Nam (UTC+7).
 - Tin có nhãn **Tin mẫu** là dữ liệu giả lập. Không có liên kết ứng tuyển giả.

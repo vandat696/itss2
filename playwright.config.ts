@@ -4,6 +4,13 @@ import { join } from "node:path";
 
 const baseURL = "http://127.0.0.1:3011";
 const runId = process.env.CAREER_TEST_RUN ?? randomUUID();
+const databaseUrl = process.env.E2E_DATABASE_URL;
+const directUrl = process.env.E2E_DIRECT_URL;
+
+if (!databaseUrl || !directUrl) {
+  throw new Error("E2E_DATABASE_URL và E2E_DIRECT_URL phải trỏ tới một database Neon dành riêng cho test.");
+}
+
 process.env.CAREER_TEST_RUN = runId;
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -14,6 +21,6 @@ export default defineConfig({
     command: "npm run db:setup && npm run start -- --port 3011",
     url: baseURL,
     timeout: 90_000,
-    env: { DATABASE_URL: `file:./e2e-${runId}.db`, CV_DIR: join(process.cwd(), "data", `e2e-${runId}`) },
+    env: { DATABASE_URL: databaseUrl, DIRECT_URL: directUrl, CV_DIR: join(process.cwd(), "data", `e2e-${runId}`) },
   },
 });
