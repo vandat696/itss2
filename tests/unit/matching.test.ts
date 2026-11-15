@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Evidence, Item, MatchingService, Requirement, score } from "@/modules/matching/domain";
+import { Evidence, Item, MatchingService, Requirement, score, summarizeAssessment } from "@/modules/matching/domain";
 
 const profile: Evidence = {
   major: "Kỹ thuật", skills: [" HTML ", "Git"], months: 0,
@@ -19,6 +19,21 @@ describe("đối chiếu yêu cầu", () => {
     expect(assess(profile, requirement("AVAILABILITY", "2 09:00-12:00"), requirement("AVAILABILITY", "2 09:00-13:00"), requirement("AVAILABILITY", "7 09:00-12:00"), requirement("AVAILABILITY", "linh hoạt")))
       .toEqual(["MET", "GAP", "GAP", "UNKNOWN"]);
   });
+  it("ghi lại căn cứ cho mỗi yêu cầu đạt từ hồ sơ của lần đánh giá", () => {
+    const items = new MatchingService().assess({ ...profile, months: 4 }, [
+      requirement("SKILL", "HTML"), requirement("MAJOR", "KỸ THUẬT"), requirement("EXPERIENCE", "3"),
+      requirement("AVAILABILITY", "2 09:00-12:00"), requirement("SKILL", "React"),
+      requirement("SKILL", "Git", "UNCLEAR"),
+    ]);
+    expect(items.map(({ explanation }) => explanation)).toEqual([
+      "Hồ sơ của bạn có kỹ năng HTML.",
+      "Chuyên ngành Kỹ thuật trong hồ sơ trùng với yêu cầu.",
+      "Hồ sơ ghi 4 tháng kinh nghiệm, đạt yêu cầu tối thiểu 3 tháng.",
+      "Lịch rảnh của bạn bao phủ ca Thứ 2, 09:00–12:00.",
+      undefined,
+      undefined,
+    ]);
+  });
   it("giữ mức chưa xác định khi thiếu hồ sơ, dữ liệu từng phần hoặc tiêu chí chưa rõ", () => {
     expect(assess(null, requirement("SKILL", "HTML"))).toEqual(["UNKNOWN"]);
     expect(assess({ major: "", skills: [], months: null, availability: [] }, requirement("SKILL", "HTML"), requirement("EXPERIENCE", "0"))).toEqual(["UNKNOWN", "UNKNOWN"]);
@@ -26,7 +41,9 @@ describe("đối chiếu yêu cầu", () => {
   });
   it("tính theo trọng số 2 và 1, bỏ qua tiêu chí chưa rõ và chưa xác định", () => {
     const item = (type: Requirement["type"], outcome: Item["outcome"]): Item => ({ ...requirement("SKILL", type, type), outcome });
-    expect(score([item("REQUIRED", "GAP"), item("PREFERRED", "MET"), item("UNCLEAR", "MET"), item("REQUIRED", "UNKNOWN")])).toBe(33);
+    const mixed = [item("REQUIRED", "GAP"), item("PREFERRED", "MET"), item("UNCLEAR", "MET"), item("REQUIRED", "UNKNOWN")];
+    expect(score(mixed)).toBe(33);
+    expect(summarizeAssessment(mixed)).toEqual({ evaluated: 2, total: 4, earnedWeight: 1, possibleWeight: 3 });
     expect(score([item("REQUIRED", "GAP")])).toBe(0);
     expect(score([item("UNCLEAR", "GAP"), item("REQUIRED", "UNKNOWN")])).toBeNull();
     expect(score([])).toBeNull();

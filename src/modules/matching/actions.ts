@@ -23,7 +23,8 @@ export async function updateAssessment(id: string, _: ActionState, form: FormDat
         if (item.type === "UNCLEAR") return item;
         const selected = input(form, `outcome-${item.id}`) as Outcome;
         if (!outcomes.includes(selected)) throw new FormError("Hãy kiểm tra trạng thái của từng tiêu chí.");
-        return { ...item, outcome: selected };
+        if (selected === item.outcome) return item;
+        return { ...item, outcome: selected, explanation: selected === "MET" ? "Bạn đã tự xác nhận đáp ứng yêu cầu này." : null };
       });
       await tx.matchAssessment.update({ where: { id }, data: { percent: score(items), items } });
       if (save) await tx.savedJob.upsert({ where: { jobId: row.jobId }, create: { jobId: row.jobId }, update: {} });

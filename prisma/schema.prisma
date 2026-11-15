@@ -42,6 +42,7 @@ enum ProgressKind {
   BASELINE
   PROFILE
   MILESTONE
+  REFLECTION
 }
 model StudentProfile {
   id          String @id
@@ -119,6 +120,8 @@ model Milestone {
   type        MilestoneType
   status      MilestoneStatus @default(OPEN)
   learned     String
+  improvedSkills String @default("")
+  experienceGained String @default("")
   jobId       String?
   job         JobPosting? @relation(fields: [jobId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())

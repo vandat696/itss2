@@ -11,8 +11,11 @@ import { normalize } from "@/modules/matching/domain";
 import { profileId, slotsSchema } from "./data";
 
 const schema = z.object({
-  major: short, year: short, skills: z.array(short.min(1)).max(60),
-  experience: long, projects: long, months: z.number().int().min(0).max(600).nullable(),
+  major: short, year: short, skills: z.array(short.min(1)).max(60, "Hãy nhập tối đa 60 kỹ năng."),
+  experience: long, projects: long,
+  months: z.number().int("Số tháng kinh nghiệm phải là số nguyên.")
+    .min(0, "Số tháng kinh nghiệm không thể âm.")
+    .max(600, "Số tháng kinh nghiệm tối đa là 600.").nullable(),
   availability: slotsSchema,
 });
 
@@ -22,10 +25,13 @@ export async function saveProfile(job: string, _: ActionState, form: FormData): 
     const skills = new Map(input(form, "skills").split(",").map((skill) => [normalize(skill), skill.trim()]));
     skills.delete("");
     const months = input(form, "months").trim();
+    if (months && !/^\d+$/.test(months)) {
+      throw new FormError("Hãy nhập số tháng kinh nghiệm là số nguyên không âm.");
+    }
     const data = validate(schema, {
       major: input(form, "major"), year: input(form, "year"), skills: [...skills.values()],
       experience: input(form, "experience"), projects: input(form, "projects"),
-      months: months ? (/^\d+$/.test(months) ? Number(months) : NaN) : null,
+      months: months ? Number(months) : null,
       availability: form.getAll("day").map((day, index) => ({
         day: Number(day), start: form.getAll("start")[index], end: form.getAll("end")[index],
       })),
@@ -48,20 +54,22 @@ export async function saveProfile(job: string, _: ActionState, form: FormData): 
     await db.$transaction(async (tx) => {
       const previous = await tx.studentProfile.findUnique({ where: { id: profileId } });
       const firstCv = uploaded && !(await tx.cvSnapshot.count({ where: { profileId } }));
+      const recordedAt = new Date();
       await tx.studentProfile.upsert({ where: { id: profileId }, create: { id: profileId, ...data }, update: data });
       if (uploaded) {
-        await tx.cvSnapshot.create({ data: { profileId, original: uploaded.original, fileKey: uploaded.key, skills: data.skills } });
+        await tx.cvSnapshot.create({ data: { profileId, original: uploaded.original, fileKey: uploaded.key, skills: data.skills, createdAt: recordedAt } });
       }
       await tx.progressRecord.create({ data: {
         profileId, kind: previous && !firstCv ? "PROFILE" : "BASELINE",
         title: firstCv ? "Lưu CV đầu tiên" : previous ? "Cập nhật hồ sơ năng lực" : "Tạo hồ sơ đầu tiên",
         detail: uploaded ? `CV: ${uploaded.original}` : [data.major, data.year].filter(Boolean).join(" · ") || "Hồ sơ nhập thủ công",
-        skills: data.skills,
+        skills: data.skills, createdAt: recordedAt,
       } });
     });
   } catch (error) {
     if (uploaded) await unlink(uploaded.path).catch(() => {});
     return formFailure(error);
   }
-  redirect(job ? `/jobs/${encodeURIComponent(job)}/match` : "/journey");
+  if (job) redirect(`/jobs/${encodeURIComponent(job)}/match`);
+  redirect(input(form, "intent") === "browse-jobs" ? "/jobs" : "/journey");
 }

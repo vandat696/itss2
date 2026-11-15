@@ -40,7 +40,7 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
         </Link>)}
         {!shown.length && <Empty title="Không có tin phù hợp"><p>Thử đổi bộ lọc hoặc nhập JD bạn đang quan tâm.</p><div className="actions"><Link href="/jobs" className="text-link">Xóa bộ lọc</Link><Link href={href("new")} className="text-link">Nhập JD</Link></div></Empty>}
       </section>
-      <div id="job-detail">{selected || query.job === "new" ? <JobForm key={selected?.id ?? "new"} job={selected ?? null} /> : <Empty title={query.job ? "Không tìm thấy tin này" : "Chọn một cơ hội để xem chi tiết"}>Bạn có thể chỉnh sửa yêu cầu và phân biệt điều kiện bắt buộc, ưu tiên hoặc cần làm rõ.</Empty>}</div>
+      <div id="job-detail">{selected || query.job === "new" ? <JobForm key={selected ? `${selected.id}-${selected.updatedAt.getTime()}` : "new"} job={selected ?? null} /> : <Empty title={query.job ? "Không tìm thấy tin này" : "Chọn một cơ hội để xem chi tiết"}>Bạn có thể chỉnh sửa yêu cầu và phân biệt điều kiện bắt buộc, ưu tiên hoặc cần làm rõ.</Empty>}</div>
     </div>
   </>;
 }

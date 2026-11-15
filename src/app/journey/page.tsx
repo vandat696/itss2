@@ -8,9 +8,19 @@ import { SearchParams, singleValues } from "@/shared/query";
 export const dynamic = "force-dynamic";
 export default async function JourneyPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const data = await readJourney();
-  const query = singleValues(await searchParams, ["status"]);
+  const latestCv = data.profile?.snapshots[0];
+  const query = singleValues(await searchParams, ["status", "progress"]);
   const tabs = [{ value: "all", label: "Tất cả" }, { value: "open", label: "Đang mở" }, { value: "overdue", label: "Quá hạn" }, { value: "completed", label: "Hoàn thành" }];
   const active = tabs.some((tab) => tab.value === query.status) ? query.status : "all";
+  const sinceStart = Boolean(data.startAt && query.progress === "since-start");
+  const timeline = sinceStart ? data.sinceStart.timeline : data.timeline;
+  function journeyHref(status: string | undefined, fromStart: boolean, anchor: string) {
+    const params = new URLSearchParams();
+    if (status && status !== "all") params.set("status", status);
+    if (fromStart) params.set("progress", "since-start");
+    const search = params.toString();
+    return `/journey${search ? `?${search}` : ""}#${anchor}`;
+  }
   const today = calendarToday();
   const filtered = data.milestones.filter((item) => active === "all" || (active === "open" ? item.status === "OPEN" : deadlineState(item, today) === active));
   const milestones = [...filtered].sort((a, b) => Number(a.status === "COMPLETED") - Number(b.status === "COMPLETED") || (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31"));
@@ -32,10 +42,10 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
       <div className="stack">
         <section className="card stack"><SectionTitle detail={`${data.completed} / ${data.milestones.length} cột mốc đã hoàn thành`}>Cột mốc của bạn</SectionTitle>
           <progress className="progress" aria-label="Tiến độ cột mốc" value={data.progress} max={100} />
-          <nav className="milestone-tabs" aria-label="Lọc cột mốc">{tabs.map((tab) => <Link key={tab.value} href={tab.value === "all" ? "/journey#milestone-list" : `/journey?status=${tab.value}#milestone-list`} aria-current={active === tab.value ? "page" : undefined}>{tab.label}<span>{data.milestones.filter((item) => tab.value === "all" || (tab.value === "open" ? item.status === "OPEN" : deadlineState(item, today) === tab.value)).length}</span></Link>)}</nav>
+          <nav className="milestone-tabs" aria-label="Lọc cột mốc">{tabs.map((tab) => <Link key={tab.value} href={journeyHref(tab.value, sinceStart, "milestone-list")} aria-current={active === tab.value ? "page" : undefined}>{tab.label}<span>{data.milestones.filter((item) => tab.value === "all" || (tab.value === "open" ? item.status === "OPEN" : deadlineState(item, today) === tab.value)).length}</span></Link>)}</nav>
           <div id="milestone-list" className="stack compact">
           {!data.milestones.length && <Empty title="Một mục tiêu nhỏ cho hôm nay"><p>Hãy chọn một việc vừa sức, ví dụ cập nhật phần dự án trong CV.</p><Link className="text-link" href="/milestones/new">Tạo cột mốc đầu tiên</Link></Empty>}
-          {data.milestones.length > 0 && !milestones.length && <Empty title="Không có cột mốc trong nhóm này"><Link href="/journey#milestone-list" className="text-link">Xem tất cả cột mốc</Link></Empty>}
+          {data.milestones.length > 0 && !milestones.length && <Empty title="Không có cột mốc trong nhóm này"><Link href={journeyHref("all", sinceStart, "milestone-list")} className="text-link">Xem tất cả cột mốc</Link></Empty>}
           {milestones.map((item) => {
             const state = deadlineState(item, today);
             return <RowLink key={item.id} href={`/milestones/${item.id}`} title={item.title} detail={`${milestoneLabels[item.type]} · ${item.dueDate ? `Hạn ${dueDateLabel(item.dueDate)}` : dateLabel(item.completedAt ?? item.createdAt)}`} badge={<span className={`tag ${state === "completed" ? "green" : state === "overdue" ? "danger" : state === "today" ? "amber" : "neutral"}`}>{state === "completed" ? "Hoàn thành" : state === "overdue" ? "Quá hạn" : state === "today" ? "Đến hạn hôm nay" : "Đang mở"}</span>} />;
@@ -51,11 +61,51 @@ export default async function JourneyPage({ searchParams }: { searchParams: Prom
         </section>
       </div>
       <aside className="stack">
-        <section className="card stack"><div className="aside-note"><span className="tile-icon"><Flag size={19} /></span><SectionTitle>Điểm xuất phát</SectionTitle></div>
-          {data.initial ? <><strong>{data.initial.title}</strong><p className="muted">{dateLabel(data.initial.createdAt)} · {data.initial.detail}</p>{data.initialSkills.length > 0 && <div className="tags">{data.initialSkills.map((skill) => <span className="tag" key={skill}>{skill}</span>)}</div>}{data.profile?.snapshots.length ? <small>CV gần nhất: {data.profile.snapshots[0].original}</small> : <small>Chưa đính kèm CV</small>}</> : <Empty title="Chưa có hồ sơ"><Link className="text-link" href="/profile">Thiết lập hồ sơ</Link></Empty>}
+        <section className="card stack" aria-label="Điểm xuất phát">
+          <div className="aside-note"><span className="tile-icon"><Flag size={19} /></span><SectionTitle>Điểm xuất phát</SectionTitle></div>
+          {data.firstCv ? <>
+            <div className="stack compact">
+              <strong>CV đầu tiên</strong>
+              <p className="muted">{data.firstCv.original} · {dateLabel(data.firstCv.createdAt)}</p>
+              <a className="text-link fit" href={`/api/cv/${data.firstCv.id}`} download>Tải CV đầu tiên</a>
+            </div>
+            {latestCv && latestCv.id !== data.firstCv.id && <div className="stack compact">
+              <strong>CV gần nhất</strong>
+              <p className="muted">{latestCv.original} · {dateLabel(latestCv.createdAt)}</p>
+              <a className="text-link fit" href={`/api/cv/${latestCv.id}`} download>Tải CV gần nhất</a>
+            </div>}
+          </> : data.initial ? <>
+            <div><strong>{data.initial.title}</strong><p className="muted">{dateLabel(data.initial.createdAt)} · {data.initial.detail}</p></div>
+            <Link className="text-link fit" href="/profile">Đính kèm CV đầu tiên</Link>
+          </> : <Empty title="Chưa có hồ sơ"><Link className="text-link" href="/profile">Thiết lập hồ sơ</Link></Empty>}
+          {(data.firstCv || data.initial) && <div className="stack compact">
+            <strong>Kỹ năng lúc bắt đầu</strong>
+            {data.initialSkills.length ? <div className="tags">{data.initialSkills.map((skill) => <span className="tag" key={skill}>{skill}</span>)}</div> : <small>Hồ sơ lúc bắt đầu chưa có kỹ năng được nhập.</small>}
+            <strong>Kỹ năng bổ sung</strong>
+            {data.addedSkills.length ? <div className="tags">{data.addedSkills.map((skill) => <span className="tag green" key={skill}>{skill}</span>)}</div> : <small>Chưa có kỹ năng mới trong hồ sơ.</small>}
+          </div>}
+          {data.startAt && <div className="progress-comparison stack compact">
+            <h3>Tiến bộ so với điểm xuất phát</h3>
+            <p className="muted">Từ {dateLabel(data.startAt)} đến nay</p>
+            <dl className="progress-totals">
+              <div><dt>Kỹ năng mới trong hồ sơ</dt><dd>{data.added}</dd></div>
+              <div><dt>Lần cập nhật CV</dt><dd>{data.cvUpdates}</dd></div>
+              <div><dt>Cột mốc đã hoàn thành</dt><dd>{data.sinceStart.completed}</dd></div>
+            </dl>
+            <Link className="text-link fit" href={journeyHref(active, true, "progress-log")}>Xem nhật ký từ điểm xuất phát</Link>
+          </div>}
         </section>
-        <section className="card stack"><SectionTitle>Nhật ký tiến bộ</SectionTitle>
-          {data.timeline.length ? <ol className="timeline">{data.timeline.map((event) => <li key={event.id}><time dateTime={event.createdAt.toISOString()}>{dateLabel(event.createdAt)}</time><strong>{event.title}</strong><p>{event.detail}</p></li>)}</ol> : <p className="muted">Các lần cập nhật hồ sơ và cột mốc hoàn thành sẽ xuất hiện ở đây.</p>}
+        <section id="progress-log" className="card stack" aria-label="Nhật ký tiến bộ"><SectionTitle>Nhật ký tiến bộ</SectionTitle>
+          {data.startAt && <nav className="milestone-tabs" aria-label="Lọc nhật ký tiến bộ">
+            <Link href={journeyHref(active, false, "progress-log")} aria-current={sinceStart ? undefined : "page"}>Toàn bộ hoạt động</Link>
+            <Link href={journeyHref(active, true, "progress-log")} aria-current={sinceStart ? "page" : undefined}>Từ điểm xuất phát</Link>
+          </nav>}
+          {timeline.length ? <ol className="timeline">{timeline.map((event) => <li key={event.id}>
+            <time dateTime={event.createdAt.toISOString()}>{dateLabel(event.createdAt)}</time>
+            {event.kind === "MILESTONE" && <span className="tag green">Cột mốc hoàn thành</span>}
+            {event.kind === "REFLECTION" && <span className="tag green">Cập nhật ghi nhận</span>}
+            <strong>{event.title}</strong><p>{event.detail}</p>
+          </li>)}</ol> : <p className="muted">Các lần cập nhật hồ sơ và cột mốc hoàn thành sẽ xuất hiện ở đây.</p>}
         </section>
       </aside>
     </div>

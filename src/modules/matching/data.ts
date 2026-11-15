@@ -5,6 +5,7 @@ import { MatchingService, criteria, outcomes, requirementTypes, score } from "./
 
 export const itemSchema = z.array(z.object({
   id: z.string(), kind: z.enum(criteria), type: z.enum(requirementTypes), value: z.string(), outcome: z.enum(outcomes),
+  explanation: z.string().nullish(),
 }));
 export const noProfileRevision = new Date(0);
 export const assessmentKey = (id: string, revision: number, updatedAt: Date | undefined) => ({

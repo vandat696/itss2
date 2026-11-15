@@ -7,6 +7,15 @@ export const slotSchema = z.object({ day: z.number().refine((day) => days.includ
   .refine((slot) => slot.start < slot.end, "Giờ kết thúc phải sau giờ bắt đầu.");
 export const slotsSchema = z.array(slotSchema).max(28);
 export const skillsSchema = z.array(z.string());
+export async function readFirstCv() {
+  const first = await db.cvSnapshot.findFirst({
+    where: { profileId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true, original: true, createdAt: true, skills: true },
+  });
+  return first && { ...first, skills: skillsSchema.parse(first.skills) };
+}
+
 export async function readProfile() {
   const profile = await db.studentProfile.findUnique({
     where: { id: profileId }, include: { snapshots: { take: 5, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, original: true, createdAt: true } } },

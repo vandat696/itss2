@@ -8,6 +8,7 @@ import { completeMilestone, milestoneTypes, validDueDate } from "./domain";
 
 const schema = z.object({
   title: required("Hãy nhập tên cột mốc."), description: long, learned: long,
+  improvedSkills: long, experienceGained: long,
   type: z.enum(milestoneTypes), jobId: z.string().max(120).nullable(),
   dueDate: z.string().refine(validDueDate, "Hạn hoàn thành không hợp lệ.").nullable(),
 });
@@ -20,6 +21,7 @@ export async function saveMilestone(id: string, _: ActionState, form: FormData):
     } else {
       const data = validate(schema, {
         title: input(form, "title"), description: input(form, "description"), learned: input(form, "learned"),
+        improvedSkills: input(form, "improvedSkills"), experienceGained: input(form, "experienceGained"),
         type: input(form, "type"), jobId: input(form, "job") || null,
         dueDate: input(form, "dueDate") || null,
       });
@@ -30,8 +32,18 @@ export async function saveMilestone(id: string, _: ActionState, form: FormData):
         const fields = completion ? { ...data, status: completion.status, completedAt: completion.completedAt } : data;
         if (previous) await tx.milestone.update({ where: { id }, data: fields });
         else await tx.milestone.create({ data: fields });
+        const reflection = [
+          data.learned,
+          data.improvedSkills && `Kỹ năng đã cải thiện\n${data.improvedSkills}`,
+          data.experienceGained && `Kinh nghiệm thu được\n${data.experienceGained}`,
+        ].filter(Boolean).join("\n\n");
         if (completion?.recordCompletion) await tx.progressRecord.create({
-          data: { kind: "MILESTONE", title: data.title, detail: data.learned || "Đã hoàn thành cột mốc." },
+          data: { kind: "MILESTONE", title: data.title, detail: reflection || "Đã hoàn thành cột mốc.", createdAt: completion.completedAt },
+        });
+        else if (previous?.completedAt && (
+          previous.learned !== data.learned || previous.improvedSkills !== data.improvedSkills || previous.experienceGained !== data.experienceGained
+        )) await tx.progressRecord.create({
+          data: { kind: "REFLECTION", title: data.title, detail: reflection || "Đã xóa nội dung ghi nhận hiện tại.", createdAt: new Date() },
         });
       });
     }

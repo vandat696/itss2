@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Bookmark, CircleHelp, ListPlus, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 import { readAssessment, recordAssessment } from "@/modules/matching/data";
+import { summarizeAssessment } from "@/modules/matching/domain";
 import { AssessmentForm } from "@/modules/matching/form";
 import { Back, Heading, SectionTitle } from "@/shared/ui";
 
@@ -17,11 +18,11 @@ export default async function MatchPage({ params, searchParams }: {
   if (!result?.job) redirect("/jobs");
   if (!result.assessment) redirect(`/jobs?job=${id}`);
   const { job, profile, assessment } = result;
+  const summary = summarizeAssessment(assessment.items);
   const matchHref = `/jobs/${id}/match`;
   const isHistorical = Boolean(query.assessment && (assessment.jobRevision !== job.revision || assessment.profileRevision.getTime() !== (profile?.updatedAt?.getTime() ?? 0)));
   const gaps = assessment.items.filter((item) => item.outcome === "GAP" && item.type === "REQUIRED");
-  const focus = gaps[0] ?? assessment.items.find((item) => item.outcome === "UNKNOWN") ?? assessment.items.find((item) => item.outcome === "GAP");
-  const milestoneHref = `/milestones/new?${new URLSearchParams({ from: "match", job: id, ...(query.assessment && { assessment: query.assessment }), ...(focus && { title: `${focus.outcome === "UNKNOWN" ? "Làm rõ" : "Bổ sung"}: ${focus.value}`.slice(0, 160), type: focus.outcome === "UNKNOWN" ? "CLARIFY" : focus.kind === "SKILL" ? "SKILL" : "RESEARCH" }) })}`;
+  const milestoneHref = `/milestones/new?${new URLSearchParams({ from: "match", job: id, assessment: assessment.id, ...(query.assessment && { returnToAssessment: "1" }) })}`;
   const applyUrl = job.applyUrl && /^https?:\/\//i.test(job.applyUrl) ? job.applyUrl : null;
   return <>
     <Back href={`/jobs?job=${id}#job-detail`}>Về yêu cầu tuyển dụng</Back>
@@ -31,7 +32,12 @@ export default async function MatchPage({ params, searchParams }: {
     <div className="layout-side">
       <div className="stack">
         <section className="hero score-hero">
-          <div><span className="hero-kicker"><Sparkles size={15} /> ĐỐI CHIẾU HỒ SƠ</span><h2>{assessment.percent === null ? "Chưa đủ thông tin để đánh giá" : "Mức độ phù hợp ước tính"}</h2><p>{assessment.percent === null ? "Hãy bổ sung hồ sơ, làm rõ yêu cầu hoặc tự kiểm tra từng tiêu chí." : "Tỷ lệ này phản ánh các tiêu chí đã xác định, không phải xác suất trúng tuyển."}</p></div>
+          <div>
+            <span className="hero-kicker"><Sparkles size={15} /> ĐỐI CHIẾU HỒ SƠ</span>
+            <h2>{assessment.percent === null ? "Chưa đủ thông tin để đánh giá" : "Mức độ phù hợp ước tính"}</h2>
+            <p><strong>{summary.evaluated}/{summary.total} tiêu chí đủ thông tin</strong></p>
+            {assessment.percent !== null && <p>{summary.earnedWeight}/{summary.possibleWeight} điểm theo trọng số</p>}
+          </div>
           {assessment.percent !== null && <strong className="score-number">{assessment.percent}%</strong>}
         </section>
         {gaps.length > 0 && <div className="notice amber"><strong>Yêu cầu bắt buộc cần bổ sung</strong><p>{gaps.map((item) => item.value).join(" · ")}</p></div>}

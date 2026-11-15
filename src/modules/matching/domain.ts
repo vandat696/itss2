@@ -3,7 +3,7 @@ export const criteria = ["SKILL", "MAJOR", "EXPERIENCE", "AVAILABILITY", "OTHER"
 export const outcomes = ["MET", "GAP", "UNKNOWN"] as const;
 export type Outcome = typeof outcomes[number];
 export type Requirement = { id: string; type: typeof requirementTypes[number]; kind: typeof criteria[number]; value: string };
-export type Item = Requirement & { outcome: Outcome };
+export type Item = Requirement & { outcome: Outcome; explanation?: string | null };
 export type Slot = { day: number; start: string; end: string };
 export type Evidence = { skills: string[]; major: string; months: number | null; availability: Slot[] };
 
@@ -19,46 +19,60 @@ export function parseSlot(value: string): Slot | null {
 }
 
 const weights = { REQUIRED: 2, PREFERRED: 1, UNCLEAR: 0 };
-export function score(items: Item[]): number | null {
-  let total = 0;
-  let earned = 0;
+export function summarizeAssessment(items: Item[]) {
+  let possibleWeight = 0;
+  let earnedWeight = 0;
+  let evaluated = 0;
   for (const item of items) {
-    if (item.outcome === "UNKNOWN") continue;
+    if (item.outcome === "UNKNOWN" || item.type === "UNCLEAR") continue;
     const weight = weights[item.type];
-    total += weight;
-    if (item.outcome === "MET") earned += weight;
+    evaluated += 1;
+    possibleWeight += weight;
+    if (item.outcome === "MET") earnedWeight += weight;
   }
-  return total ? Math.round(100 * earned / total) : null;
+  return { evaluated, possibleWeight, earnedWeight, total: items.length };
+}
+
+export function score(items: Item[]): number | null {
+  const { earnedWeight, possibleWeight } = summarizeAssessment(items);
+  return possibleWeight ? Math.round(100 * earnedWeight / possibleWeight) : null;
 }
 
 export class MatchingService {
   assess(profile: Evidence | null, requirements: Requirement[]): Item[] {
-    return requirements.map((requirement) => ({ ...requirement, outcome: this.compare(profile, requirement) }));
+    return requirements.map((requirement) => ({ ...requirement, ...this.compare(profile, requirement) }));
   }
 
-  private compare(profile: Evidence | null, { type, kind, value }: Requirement): Outcome {
-    if (!profile || type === "UNCLEAR") return "UNKNOWN";
-    const compare = (known: boolean, matches: boolean): Outcome => known ? (matches ? "MET" : "GAP") : "UNKNOWN";
+  private compare(profile: Evidence | null, { type, kind, value }: Requirement): Pick<Item, "outcome" | "explanation"> {
+    if (!profile || type === "UNCLEAR") return { outcome: "UNKNOWN" };
+    const compare = (known: boolean, matches: boolean, explanation: string): Pick<Item, "outcome" | "explanation"> => {
+      if (!known) return { outcome: "UNKNOWN" };
+      return matches ? { outcome: "MET", explanation } : { outcome: "GAP" };
+    };
     switch (kind) {
       case "SKILL":
-        return compare(profile.skills.length > 0, profile.skills.some((skill) => normalize(skill) === normalize(value)));
+        return compare(profile.skills.length > 0, profile.skills.some((skill) => normalize(skill) === normalize(value)),
+          `Hồ sơ của bạn có kỹ năng ${value}.`);
       case "MAJOR":
-        return compare(Boolean(profile.major), normalize(profile.major) === normalize(value));
+        return compare(Boolean(profile.major), normalize(profile.major) === normalize(value),
+          `Chuyên ngành ${profile.major} trong hồ sơ trùng với yêu cầu.`);
       case "EXPERIENCE":
-        return compare(profile.months !== null && /^\d+$/.test(value), (profile.months ?? 0) >= Number(value));
+        return compare(profile.months !== null && /^\d+$/.test(value), (profile.months ?? 0) >= Number(value),
+          `Hồ sơ ghi ${profile.months} tháng kinh nghiệm, đạt yêu cầu tối thiểu ${Number(value)} tháng.`);
       case "AVAILABILITY": {
         const slot = parseSlot(value);
-        if (!slot) return "UNKNOWN";
+        if (!slot) return { outcome: "UNKNOWN" };
         const ranges = profile.availability.filter((range) => range.day === slot.day).sort((a, b) => a.start.localeCompare(b.start));
         let coveredUntil = slot.start;
         for (const range of ranges) {
           if (range.start > coveredUntil) break;
           if (range.end > coveredUntil) coveredUntil = range.end;
         }
-        return compare(profile.availability.length > 0, coveredUntil >= slot.end);
+        return compare(profile.availability.length > 0, coveredUntil >= slot.end,
+          `Lịch rảnh của bạn bao phủ ca ${dayLabel(slot.day)}, ${slot.start}–${slot.end}.`);
       }
       case "OTHER":
-        return "UNKNOWN";
+        return { outcome: "UNKNOWN" };
     }
   }
 }
