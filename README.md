@@ -1,40 +1,29 @@
-# Bước Nhỏ
+# Michii — ITSS2
 
-Ứng dụng hướng nghiệp cho sinh viên. Bạn có thể đối chiếu hồ sơ với yêu cầu tuyển dụng, chọn một việc cần cải thiện và ghi lại tiến bộ theo thời gian.
+Landing page giới thiệu website hỗ trợ người tìm việc hiểu năng lực, đối chiếu yêu cầu công việc và theo dõi cột mốc cải thiện. Michii là tên giao diện tạm thời.
 
-## Chạy trên máy cá nhân
+## Khởi chạy
 
-Cần Node.js 22.13+ hoặc Node.js 24 và npm.
+Không cần cài dependency. Dùng Node.js có hỗ trợ ES modules và `import.meta.dirname`:
 
-```powershell
-npm ci
-Copy-Item .env.example .env
-npm run db:setup
-npm run dev
-```
-
-Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Bước Nhỏ](http://127.0.0.1:3000). Lệnh `db:setup` tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
-
-Để chạy bản production trên máy cá nhân, dùng `npm run build` rồi `npm start`.
-
-## Kiểm thử
-
-```powershell
-npm run lint
-npm run typecheck
-npm test
+```bash
+npm run check
 npm run build
-npx playwright install chromium
-npm run test:e2e
 ```
 
-Có thể dùng Chrome đã cài bằng cách đặt `PLAYWRIGHT_CHANNEL=chrome`. Với PowerShell, dùng `$env:PLAYWRIGHT_CHANNEL = "chrome"`. Playwright dùng bản build production, cổng 3011 và một SQLite riêng cho mỗi lần chạy. Tệp kiểm thử nằm trong `prisma/e2e-*.db` và `data/e2e-*`, được Git bỏ qua.
+Phục vụ thư mục `dist/` bằng static server. Có thể triển khai trên nền tảng hosting tĩnh với build command `npm run build` và output directory `dist`.
 
-## Dữ liệu và phạm vi
+## Cấu trúc
 
-- SQLite mặc định ở `prisma/local.db`. Tệp CV được lưu dưới `data/cv/` với định danh riêng. Cả hai nằm ngoài các tệp được Git theo dõi.
-- CV là PDF tối đa 5 MB. Quy tắc đối chiếu dùng dữ liệu nhập tay. Bản demo lưu tệp cùng thông tin phiên bản CV, chưa có chức năng mở lại hoặc trích xuất nội dung PDF.
-- Tin có nhãn **Tin mẫu** là dữ liệu giả lập. Không có liên kết ứng tuyển giả.
-- Đây là bản demo một người dùng, chạy trên loopback, không có xác thực. Thiết kế này không phù hợp để triển khai công khai cho nhiều người dùng.
+- `index.html`, `styles.css`, `app.js`: nội dung, giao diện responsive và tương tác.
+- `assets/`: favicon, phông chữ tự phục vụ, giấy phép phông chữ.
+- `docs/SPEC.md`: đặc tả MVP dạng nháp.
+- `docs/PLAN.md`: kế hoạch triển khai.
+- `docs/QUESTIONS.md`: câu hỏi cần làm rõ.
+- `docs/LANDING.md`: phạm vi landing và bản mẫu.
 
-Xem thêm [Kiến trúc](docs/architecture.md), [Luồng màn hình](docs/screen-flow.md) và [Phạm vi MVP](docs/mvp-scope.md).
+## Phạm vi bản mẫu
+
+CTA mở bản trải nghiệm bằng dữ liệu chuẩn bị sẵn: hồ sơ, hai công việc mẫu, đối chiếu kỹ năng, tạo và hoàn thành cột mốc. Bản mẫu không gửi dữ liệu ra ngoài, không có tài khoản, tải CV hoặc AI thật. Đóng/mở lại bản mẫu sẽ đặt lại dữ liệu trải nghiệm.
+
+Hiệu ứng tôn trọng `prefers-reduced-motion`. Menu di động, dialog và tab có hỗ trợ bàn phím.
