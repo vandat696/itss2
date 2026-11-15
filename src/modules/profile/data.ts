@@ -9,7 +9,7 @@ export const slotsSchema = z.array(slotSchema).max(28);
 export const skillsSchema = z.array(z.string());
 export async function readProfile() {
   const profile = await db.studentProfile.findUnique({
-    where: { id: profileId }, include: { snapshots: { take: 1, orderBy: { createdAt: "desc" }, select: { original: true } } },
+    where: { id: profileId }, include: { snapshots: { take: 5, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, original: true, createdAt: true } } },
   });
   return profile && { ...profile, skills: skillsSchema.parse(profile.skills), availability: slotsSchema.parse(profile.availability) };
 }

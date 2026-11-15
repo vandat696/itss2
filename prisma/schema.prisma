@@ -124,6 +124,7 @@ model Milestone {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   completedAt DateTime?
+  dueDate     String?
 }
 model ProgressRecord {
   id        String @id @default(cuid())

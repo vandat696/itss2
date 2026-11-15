@@ -13,7 +13,7 @@ npm run db:setup
 npm run dev
 ```
 
-Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Bước Nhỏ](http://127.0.0.1:3000). Lệnh `db:setup` tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
+Trên macOS/Linux, dùng `cp .env.example .env`. Mở [Bước Nhỏ](http://127.0.0.1:3000). Lệnh `db:setup` tạo tệp SQLite nếu chưa có (hỗ trợ khởi tạo trên Windows), tạo Prisma Client, chạy migration và thêm tin mẫu. Có thể chạy lại mà không nhân bản hoặc ghi đè các tin mẫu đã sửa.
 
 Để chạy bản production trên máy cá nhân, dùng `npm run build` rồi `npm start`.
 
@@ -33,7 +33,8 @@ Có thể dùng Chrome đã cài bằng cách đặt `PLAYWRIGHT_CHANNEL=chrome`
 ## Dữ liệu và phạm vi
 
 - SQLite mặc định ở `prisma/local.db`. Tệp CV được lưu dưới `data/cv/` với định danh riêng. Cả hai nằm ngoài các tệp được Git theo dõi.
-- CV là PDF tối đa 5 MB. Quy tắc đối chiếu dùng dữ liệu nhập tay. Bản demo lưu tệp cùng thông tin phiên bản CV, chưa có chức năng mở lại hoặc trích xuất nội dung PDF.
+- CV là PDF tối đa 5 MB. Quy tắc đối chiếu dùng dữ liệu nhập tay. Trang hồ sơ hiển thị 5 phiên bản gần nhất và cho phép tải lại tệp gốc, chưa trích xuất nội dung PDF. Route tải CV dùng bản ghi của hồ sơ demo, không chấp nhận đường dẫn tệp từ người dùng và không lưu cache.
+- Cột mốc có hạn hoàn thành tùy chọn. Hành trình đánh dấu đến hạn hôm nay, quá hạn và có bộ lọc đang mở / quá hạn / hoàn thành. Các mục đang mở được xếp theo hạn gần nhất. Ngày hạn được giữ nguyên theo lịch; trạng thái hôm nay dùng múi giờ Việt Nam (UTC+7).
 - Tin có nhãn **Tin mẫu** là dữ liệu giả lập. Không có liên kết ứng tuyển giả.
 - Đây là bản demo một người dùng, chạy trên loopback, không có xác thực. Thiết kế này không phù hợp để triển khai công khai cho nhiều người dùng.
 

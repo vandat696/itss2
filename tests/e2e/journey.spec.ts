@@ -96,3 +96,44 @@ test("lọc trống, JD thủ công thiếu dữ liệu và hiển thị trên �
   await page.getByRole("link", { name: "Hủy", exact: true }).click();
   await expect(page).toHaveURL(/\/journey$/);
 });
+
+test("hạn cột mốc được lưu, lọc quá hạn và hoàn thành", async ({ page }) => {
+  await page.goto("/milestones/new");
+  await page.getByLabel("Tên cột mốc").fill("Luyện phỏng vấn có thời hạn");
+  await page.getByLabel("Hạn hoàn thành").fill("2020-01-02");
+  await page.getByRole("button", { name: "Lưu cột mốc", exact: true }).click();
+  const milestone = page.getByRole("link", { name: /Luyện phỏng vấn có thời hạn/ });
+  await expect(milestone).toContainText("Quá hạn");
+  await expect(milestone).toContainText("02/01/2020");
+  await page.getByRole("navigation", { name: "Lọc cột mốc" }).getByRole("link", { name: /Quá hạn/ }).click();
+  await expect(milestone).toBeVisible();
+  await milestone.click();
+  await expect(page.getByLabel("Hạn hoàn thành")).toHaveValue("2020-01-02");
+  await page.getByLabel("Điều đã học").fill("Đã luyện trình bày dự án trong 2 phút.");
+  await page.getByRole("button", { name: "Hoàn thành và lưu ghi nhận" }).click();
+  await expect(milestone).toContainText("Hoàn thành");
+  await page.getByRole("navigation", { name: "Lọc cột mốc" }).getByRole("link", { name: /Quá hạn/ }).click();
+  await expect(page.getByText("Không có cột mốc trong nhóm này")).toBeVisible();
+  await page.setViewportSize({ width: 360, height: 800 });
+  expect(await page.locator("body").evaluate((body) => body.scrollWidth)).toBeLessThanOrEqual(360);
+});
+
+test("tải lại CV gốc và không trả về bản ghi không tồn tại", async ({ page }) => {
+  await page.goto("/profile");
+  await upload(page, "CV tiếng Việt.pdf");
+  await page.getByRole("button", { name: "Lưu hồ sơ", exact: true }).click();
+  await expect(page).toHaveURL(/\/journey$/);
+  await page.goto("/profile");
+  const link = page.getByRole("link", { name: "Tải CV: CV tiếng Việt.pdf", exact: true });
+  await expect(link).toBeVisible();
+  const response = await page.request.get((await link.getAttribute("href"))!);
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toBe("application/pdf");
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(response.headers()["content-disposition"]).toContain(encodeURIComponent("CV tiếng Việt.pdf"));
+  expect(await response.body()).toEqual(cv("unused.pdf").buffer);
+  const download = page.waitForEvent("download");
+  await link.click();
+  expect((await download).suggestedFilename()).toBe("CV tiếng Việt.pdf");
+  expect((await page.request.get("/api/cv/nonexistent")).status()).toBe(404);
+});

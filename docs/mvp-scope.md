@@ -6,4 +6,6 @@
 - Cột mốc có thể chỉnh sửa, hoàn thành hoặc xóa. Lịch sử hoàn thành được giữ lại khi xóa. Chỉ số cột mốc hiện tại đếm các cột mốc còn tồn tại. Chỉ số kỹ năng so sánh hồ sơ hiện tại với hồ sơ ban đầu. Chỉ số cập nhật CV đếm số lần tải CV sau bản đầu tiên.
 - Một tin được đếm là đã đánh giá khi có kết quả ghi nhận, kể cả khi kết quả chưa đủ thông tin. Số lần thay đổi hồ sơ/JD không làm tăng số tin đã đánh giá.
 
-Các phiên bản sau có thể bổ sung xác thực và phân tách người dùng, phân tích CV đáng tin cậy, quản lý tệp CV, tích hợp nguồn tin thật và lịch làm việc theo ngày cụ thể. Bản MVP hỗ trợ lịch lặp theo tuần với các khoảng giờ trong một ngày.
+Cột mốc có hạn hoàn thành tùy chọn, bộ lọc trạng thái và đánh dấu quá hạn theo UTC+7. Mục đã hoàn thành không bị đánh dấu quá hạn. Trên hồ sơ, người dùng có thể tải lại 5 phiên bản CV gần nhất.
+
+Các phiên bản sau có thể bổ sung xác thực và phân tách người dùng, phân tích CV đáng tin cậy, xóa phiên bản CV, tích hợp nguồn tin thật và lịch làm việc theo ngày cụ thể. Bản MVP hỗ trợ lịch lặp theo tuần với các khoảng giờ trong một ngày.

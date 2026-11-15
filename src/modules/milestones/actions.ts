@@ -4,11 +4,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/shared/db";
 import { ActionState, FormError, formFailure, input, long, required, validate } from "@/shared/forms";
-import { completeMilestone, milestoneTypes } from "./domain";
+import { completeMilestone, milestoneTypes, validDueDate } from "./domain";
 
 const schema = z.object({
   title: required("Hãy nhập tên cột mốc."), description: long, learned: long,
   type: z.enum(milestoneTypes), jobId: z.string().max(120).nullable(),
+  dueDate: z.string().refine(validDueDate, "Hạn hoàn thành không hợp lệ.").nullable(),
 });
 
 export async function saveMilestone(id: string, _: ActionState, form: FormData): Promise<ActionState> {
@@ -20,6 +21,7 @@ export async function saveMilestone(id: string, _: ActionState, form: FormData):
       const data = validate(schema, {
         title: input(form, "title"), description: input(form, "description"), learned: input(form, "learned"),
         type: input(form, "type"), jobId: input(form, "job") || null,
+        dueDate: input(form, "dueDate") || null,
       });
       await db.$transaction(async (tx) => {
         const previous = id ? await tx.milestone.findUnique({ where: { id } }) : null;

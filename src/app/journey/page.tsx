@@ -1,12 +1,19 @@
 import Link from "next/link";
 import { ArrowUpRight, BriefcaseBusiness, CheckCircle2, ClipboardCheck, Compass, FileText, Flag, Plus, Sprout, Bookmark } from "lucide-react";
 import { readJourney } from "@/modules/journey/data";
-import { milestoneLabels } from "@/modules/milestones/domain";
+import { calendarToday, deadlineState, dueDateLabel, milestoneLabels } from "@/modules/milestones/domain";
 import { dateLabel, Empty, Heading, RowLink, SectionTitle } from "@/shared/ui";
+import { SearchParams, singleValues } from "@/shared/query";
 
 export const dynamic = "force-dynamic";
-export default async function JourneyPage() {
+export default async function JourneyPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const data = await readJourney();
+  const query = singleValues(await searchParams, ["status"]);
+  const tabs = [{ value: "all", label: "Tất cả" }, { value: "open", label: "Đang mở" }, { value: "overdue", label: "Quá hạn" }, { value: "completed", label: "Hoàn thành" }];
+  const active = tabs.some((tab) => tab.value === query.status) ? query.status : "all";
+  const today = calendarToday();
+  const filtered = data.milestones.filter((item) => active === "all" || (active === "open" ? item.status === "OPEN" : deadlineState(item, today) === active));
+  const milestones = [...filtered].sort((a, b) => Number(a.status === "COMPLETED") - Number(b.status === "COMPLETED") || (a.dueDate ?? "9999-12-31").localeCompare(b.dueDate ?? "9999-12-31"));
   const stats = [
     { label: "Cột mốc hoàn thành", value: data.completed, icon: CheckCircle2 },
     { label: "Kỹ năng bổ sung", value: data.added, icon: Sprout },
@@ -25,8 +32,15 @@ export default async function JourneyPage() {
       <div className="stack">
         <section className="card stack"><SectionTitle detail={`${data.completed} / ${data.milestones.length} cột mốc đã hoàn thành`}>Cột mốc của bạn</SectionTitle>
           <progress className="progress" aria-label="Tiến độ cột mốc" value={data.progress} max={100} />
+          <nav className="milestone-tabs" aria-label="Lọc cột mốc">{tabs.map((tab) => <Link key={tab.value} href={tab.value === "all" ? "/journey#milestone-list" : `/journey?status=${tab.value}#milestone-list`} aria-current={active === tab.value ? "page" : undefined}>{tab.label}<span>{data.milestones.filter((item) => tab.value === "all" || (tab.value === "open" ? item.status === "OPEN" : deadlineState(item, today) === tab.value)).length}</span></Link>)}</nav>
+          <div id="milestone-list" className="stack compact">
           {!data.milestones.length && <Empty title="Một mục tiêu nhỏ cho hôm nay"><p>Hãy chọn một việc vừa sức, ví dụ cập nhật phần dự án trong CV.</p><Link className="text-link" href="/milestones/new">Tạo cột mốc đầu tiên</Link></Empty>}
-          {data.milestones.map((item) => <RowLink key={item.id} href={`/milestones/${item.id}`} title={item.title} detail={`${milestoneLabels[item.type]} · ${dateLabel(item.completedAt ?? item.createdAt)}`} badge={<span className={`tag ${item.status === "COMPLETED" ? "green" : "neutral"}`}>{item.status === "COMPLETED" ? "Hoàn thành" : "Đang mở"}</span>} />)}
+          {data.milestones.length > 0 && !milestones.length && <Empty title="Không có cột mốc trong nhóm này"><Link href="/journey#milestone-list" className="text-link">Xem tất cả cột mốc</Link></Empty>}
+          {milestones.map((item) => {
+            const state = deadlineState(item, today);
+            return <RowLink key={item.id} href={`/milestones/${item.id}`} title={item.title} detail={`${milestoneLabels[item.type]} · ${item.dueDate ? `Hạn ${dueDateLabel(item.dueDate)}` : dateLabel(item.completedAt ?? item.createdAt)}`} badge={<span className={`tag ${state === "completed" ? "green" : state === "overdue" ? "danger" : state === "today" ? "amber" : "neutral"}`}>{state === "completed" ? "Hoàn thành" : state === "overdue" ? "Quá hạn" : state === "today" ? "Đến hạn hôm nay" : "Đang mở"}</span>} />;
+          })}
+          </div>
         </section>
         <section className="card stack"><SectionTitle detail="Mở lại các bản đánh giá hoặc tìm cơ hội đã lưu.">Cơ hội của bạn</SectionTitle>
           {!data.assessedJobs.length && <Empty title="Bạn chưa đánh giá cơ hội nào"><Link className="text-link" href="/jobs">Xem tin tuyển dụng</Link></Empty>}

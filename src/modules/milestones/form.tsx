@@ -16,6 +16,7 @@ export function MilestoneForm({ milestone, jobs, back, draft }: {
     {milestone?.completedAt && <div className="notice green">Đã hoàn thành ngày {dateLabel(milestone.completedAt)}</div>}
     <Field label="Tên cột mốc"><input name="title" required maxLength={160} defaultValue={milestone?.title ?? draft.title} placeholder="Ví dụ: Ôn lại các thao tác Git cơ bản" /></Field>
     <Field label="Loại cột mốc"><select name="type" defaultValue={milestone?.type ?? draft.type}>{milestoneTypes.map((type) => <option key={type} value={type}>{milestoneLabels[type]}</option>)}</select></Field>
+    <Field label="Hạn hoàn thành" help="Không bắt buộc. Cột mốc đến hạn và quá hạn sẽ được đánh dấu trong hành trình."><input name="dueDate" type="date" min="1900-01-01" max="9999-12-31" defaultValue={milestone?.dueDate ?? ""} /></Field>
     <Field label="Mô tả"><textarea name="description" rows={3} defaultValue={milestone?.description} /></Field>
     <Field label="Tin tuyển dụng liên quan"><select name="job" defaultValue={milestone?.jobId ?? draft.jobId ?? ""}><option value="">Không liên kết</option>{jobs.map((job) => <option key={job.id} value={job.id}>{job.title}</option>)}</select></Field>
     <Field label="Điều đã học" help="Bạn có thể ghi kỹ năng đã luyện, kiến thức mới hoặc việc mình muốn làm tiếp."><textarea name="learned" rows={4} defaultValue={milestone?.learned} /></Field>
